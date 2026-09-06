@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3006",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "npm --prefix backend run prisma:migrate",
+    "db:seed": "npm --prefix backend run prisma:seed",
     "build": "next build",
     "start": "next start"
   },

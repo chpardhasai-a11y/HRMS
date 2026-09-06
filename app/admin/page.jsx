@@ -1,115 +1,308 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
 import {
-  BadgeCheck,
-  Banknote,
-  BriefcaseBusiness,
+  BarChart3,
   Building2,
   CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  CircleDollarSign,
-  ClipboardList,
-  FileCheck2,
+  Download,
+  Edit3,
+  FileClock,
+  FileDown,
+  FileUp,
   Filter,
-  GraduationCap,
-  Home,
-  IdCard,
-  Landmark,
-  LayoutDashboard,
-  MapPin,
+  GitBranch,
   MoreHorizontal,
+  Network,
   Plus,
   Search,
   Settings2,
+  ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
+  ToggleLeft,
+  Upload,
   UserRound,
-  UsersRound
+  UsersRound,
+  X
 } from 'lucide-react';
 import AdminSideNavigation from '../components/AdminSideNavigation';
+import {
+  formatDate,
+  getActiveCompanyId,
+  getCompanies,
+  getEmployeeAudit,
+  getEmployees,
+  recordDocumentNote,
+  setActiveCompanyId,
+  statusLabel,
+  transferEmployee,
+  updateEmployee as apiUpdateEmployee,
+  updateEmployeeManager,
+  updateEmployeeStatus
+} from '../lib/hrmsApi';
 
-const employees = [
-  { code: 'EMP001245', name: 'Rahul Sharma', role: 'Senior Software Engineer', department: 'Engineering', location: 'Mumbai HQ', status: 'Active', completeness: '92%' },
-  { code: 'EMP001108', name: 'Sneha Iyer', role: 'Product Manager', department: 'Product', location: 'Bengaluru', status: 'Active', completeness: '88%' },
-  { code: 'EMP000982', name: 'Amit Verma', role: 'UI/UX Designer', department: 'Design', location: 'Remote', status: 'On Leave', completeness: '81%' },
-  { code: 'EMP000744', name: 'Pooja Singh', role: 'HR Executive', department: 'People Ops', location: 'Mumbai HQ', status: 'Active', completeness: '96%' },
-  { code: 'EMP000512', name: 'Nikhil Nair', role: 'Finance Analyst', department: 'Finance', location: 'Delhi NCR', status: 'Inactive', completeness: '74%' }
-];
+const statusOptions = ['Active', 'On Leave', 'Inactive', 'Resigned', 'Terminated'];
+const departmentOptions = ['Engineering', 'Product', 'Design', 'People Ops', 'Finance', 'Sales'];
+const locationOptions = ['Mumbai HQ', 'Bengaluru', 'Delhi NCR', 'Remote', 'Hyderabad'];
+const typeOptions = ['Permanent', 'Contract', 'Intern', 'Consultant'];
+const gradeOptions = ['G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'C3'];
 
-const masterGroups = [
-  {
-    title: 'Organization Setup',
-    icon: Building2,
-    description: 'Legal entities, business units, departments, teams, designations, grades and cost centers.',
-    count: '8 masters',
-    health: 'Configured'
-  },
-  {
-    title: 'Employment Setup',
-    icon: BriefcaseBusiness,
-    description: 'Employment types, employee statuses, work modes, shifts, probation and notice period options.',
-    count: '7 masters',
-    health: 'Needs review'
-  },
-  {
-    title: 'Location Setup',
-    icon: MapPin,
-    description: 'Countries, states, cities, office locations, work location types and address categories.',
-    count: '6 masters',
-    health: 'Configured'
-  },
-  {
-    title: 'Document Setup',
-    icon: FileCheck2,
-    description: 'Document types, mandatory flags, verification statuses, expiry rules and allowed file types.',
-    count: '5 masters',
-    health: 'Configured'
-  },
-  {
-    title: 'Bank & Statutory Setup',
-    icon: Landmark,
-    description: 'Bank list, account types, statutory ID types, PF/ESI/PT applicability and tax regime options.',
-    count: '6 masters',
-    health: 'Needs review'
-  },
-  {
-    title: 'Education & Experience Setup',
-    icon: GraduationCap,
-    description: 'Degree types, qualification levels, institution types and previous employment categories.',
-    count: '4 masters',
-    health: 'Configured'
-  },
-  {
-    title: 'Salary Setup',
-    icon: CircleDollarSign,
-    description: 'Salary component types, pay frequencies, currency, visibility and profile summary rules.',
-    count: '4 masters',
-    health: 'Draft'
-  }
-];
-
-const sectionReadiness = [
-  ['Personal Info', 'Complete', UserRound],
-  ['Employment', 'Complete', BriefcaseBusiness],
-  ['Organization Unit', 'Complete', Building2],
-  ['Location/Address', 'Complete', Home],
-  ['Previous Employment', 'Needs verification', ClipboardList],
-  ['Documents', '3 verified / 1 pending', FileCheck2],
-  ['Bank Details', 'Masked', Banknote],
-  ['Statutory Details', 'Verified', IdCard],
-  ['Education Details', 'Complete', GraduationCap],
-  ['Salary Details', 'Restricted', CircleDollarSign]
+const adminModules = [
+  { title: 'People Operations', icon: UsersRound, href: '#employees', status: 'Live', summary: 'Employee master, profile changes, bulk onboarding and lifecycle actions.' },
+  { title: 'Org Structure', icon: Network, href: '#structure', status: 'Setup', summary: 'Legal entities, departments, teams, reporting matrix, grades and locations.' },
+  { title: 'Payroll & Benefits', icon: BarChart3, href: '#payroll', status: 'Planned', summary: 'Compensation setup, statutory IDs, bank details and benefit eligibility.' },
+  { title: 'Policy & Workflow', icon: ShieldCheck, href: '#governance', status: 'Planned', summary: 'Roles, approvals, data visibility, escalation rules and compliance calendar.' },
+  { title: 'Documents', icon: FileClock, href: '#documents', status: 'Partial', summary: 'Employee document metadata, verification states, letters and reminders.' },
+  { title: 'Reports', icon: CalendarDays, href: '#reports', status: 'Planned', summary: 'Headcount, movement, readiness, expiry and workforce dashboards.' }
 ];
 
 function statusClass(status) {
-  if (status === 'Active' || status === 'Configured' || status === 'Complete') return 'badge-success';
-  if (status === 'On Leave' || status === 'Needs review' || status === 'Needs verification' || status.includes('pending')) return 'badge-warning';
-  if (status === 'Inactive' || status === 'Draft') return 'badge-neutral';
-  return 'badge-info';
+  if (statusLabel(status) === 'Active') return 'badge-success';
+  if (statusLabel(status) === 'On Leave') return 'badge-warning';
+  return 'badge-neutral';
+}
+
+function createFormState(employee) {
+  return { ...employee, status: statusLabel(employee.status), joinDate: formatDate(employee.joinDate) };
 }
 
 export default function AdminPage() {
+  const [employees, setEmployees] = useState([]);
+  const [openMenuCode, setOpenMenuCode] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [modal, setModal] = useState(null);
+  const [formState, setFormState] = useState({});
+  const [toast, setToast] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [auditItems, setAuditItems] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [activeCompanyId, setActiveCompanyIdState] = useState('');
+
+  useEffect(() => {
+    loadAdminContext();
+  }, []);
+
+  const selectedEmployee = useMemo(
+    () => employees.find((employee) => employee.code === modal?.employeeCode),
+    [employees, modal]
+  );
+
+  async function loadEmployees() {
+    try {
+      setIsLoading(true);
+      setError('');
+      setEmployees(await getEmployees());
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to load employees.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loadAdminContext() {
+    try {
+      setIsLoading(true);
+      setError('');
+      const companyList = await getCompanies();
+      setCompanies(companyList);
+      const storedCompanyId = getActiveCompanyId();
+      const nextCompanyId = storedCompanyId || companyList[0]?.id || '';
+      if (nextCompanyId) setActiveCompanyId(nextCompanyId);
+      setActiveCompanyIdState(nextCompanyId);
+      setEmployees(await getEmployees());
+    } catch (loadError) {
+      setError(loadError.message || 'Unable to load admin workspace.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function selectCompany(companyId) {
+    setActiveCompanyIdState(companyId);
+    setActiveCompanyId(companyId);
+    await loadEmployees();
+  }
+
+  async function openModal(type, employee) {
+    setOpenMenuCode(null);
+    setFormState(createFormState(employee));
+    setModal({ type, employeeCode: employee.code });
+    if (type === 'audit') {
+      try {
+        setAuditItems(await getEmployeeAudit(employee.code));
+      } catch {
+        setAuditItems([]);
+      }
+    }
+  }
+
+  function toggleRowMenu(event, employeeCode) {
+    event.stopPropagation();
+    if (openMenuCode === employeeCode) {
+      setOpenMenuCode(null);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 240;
+    const menuHeight = 340;
+    setMenuPosition({
+      top: Math.min(rect.bottom + 6, window.innerHeight - menuHeight - 12),
+      left: Math.max(12, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 12))
+    });
+    setOpenMenuCode(employeeCode);
+  }
+
+  function closeModal() {
+    setModal(null);
+    setFormState({});
+  }
+
+  async function applyEmployeeUpdate(code, request, message) {
+    try {
+      const updatedEmployee = await request();
+      setEmployees((currentEmployees) =>
+        currentEmployees.map((employee) => (
+          employee.code === code ? updatedEmployee : employee
+        ))
+      );
+      setToast(message);
+      closeModal();
+    } catch (saveError) {
+      setToast(saveError.message || 'Unable to save employee change.');
+    }
+  }
+
+  function handleFormChange(field, value) {
+    setFormState((current) => ({ ...current, [field]: value }));
+  }
+
+  function downloadEmployee(employee) {
+    setOpenMenuCode(null);
+    const blob = new Blob([JSON.stringify(employee, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${employee.code}-employee-record.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setToast(`Downloaded ${employee.code} employee record.`);
+  }
+
+  function renderEditForm() {
+    return (
+      <div className="form-grid">
+        <Field label="Employee Name" value={formState.name} onChange={(value) => handleFormChange('name', value)} />
+        <Field label="Role" value={formState.role} onChange={(value) => handleFormChange('role', value)} />
+        <Field label="Legal Entity" value={formState.entity} onChange={(value) => handleFormChange('entity', value)} />
+        <SelectField label="Department" value={formState.department} options={departmentOptions} onChange={(value) => handleFormChange('department', value)} />
+        <SelectField label="Location" value={formState.location} options={locationOptions} onChange={(value) => handleFormChange('location', value)} />
+        <SelectField label="Employment Type" value={formState.type} options={typeOptions} onChange={(value) => handleFormChange('type', value)} />
+        <SelectField label="Grade" value={formState.grade} options={gradeOptions} onChange={(value) => handleFormChange('grade', value)} />
+        <Field label="Reporting Manager" value={formState.manager} onChange={(value) => handleFormChange('manager', value)} />
+      </div>
+    );
+  }
+
+  function renderModalBody() {
+    if (!selectedEmployee) return null;
+    if (modal.type === 'edit') return renderEditForm();
+    if (modal.type === 'status') {
+      return <SelectField label="Employee Status" value={formState.status} options={statusOptions} onChange={(value) => handleFormChange('status', value)} />;
+    }
+    if (modal.type === 'manager') {
+      return <Field label="Reporting Manager" value={formState.manager} onChange={(value) => handleFormChange('manager', value)} />;
+    }
+    if (modal.type === 'transfer') {
+      return (
+        <div className="form-grid">
+          <SelectField label="Department" value={formState.department} options={departmentOptions} onChange={(value) => handleFormChange('department', value)} />
+          <SelectField label="Location" value={formState.location} options={locationOptions} onChange={(value) => handleFormChange('location', value)} />
+          <Field label="Role" value={formState.role} onChange={(value) => handleFormChange('role', value)} />
+          <SelectField label="Grade" value={formState.grade} options={gradeOptions} onChange={(value) => handleFormChange('grade', value)} />
+        </div>
+      );
+    }
+    if (modal.type === 'upload') {
+      return (
+        <div className="form-grid single">
+          <SelectField label="Document Type" value={formState.documentType || 'Address Proof'} options={['Address Proof', 'PAN Card', 'Aadhaar', 'Employment Contract', 'Education Certificate']} onChange={(value) => handleFormChange('documentType', value)} />
+          <Field label="Upload Note" value={formState.uploadNote || ''} onChange={(value) => handleFormChange('uploadNote', value)} placeholder="Example: Signed copy received" />
+        </div>
+      );
+    }
+    if (modal.type === 'audit') {
+      return (
+        <div className="audit-list">
+          {auditItems.length === 0 && <span><strong>No audit entries yet</strong> Changes made through this screen will appear here.</span>}
+          {auditItems.map((item) => (
+            <span key={item.id}>
+              <strong>{formatDate(item.createdAt)}</strong>
+              {item.action.replaceAll('_', ' ')}
+            </span>
+          ))}
+        </div>
+      );
+    }
+    if (modal.type === 'deactivate') {
+      return (
+        <div className="danger-copy">
+          <ShieldAlert size={28} />
+          <p>This will set {selectedEmployee.name} to Inactive in the local Employee Master table. This action is frontend-only and can be reset by refreshing the page.</p>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  function renderModalFooter() {
+    if (!selectedEmployee || modal.type === 'audit') {
+      return <button className="btn btn-secondary" type="button" onClick={closeModal}>Close</button>;
+    }
+    if (modal.type === 'edit') {
+      return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => apiUpdateEmployee(selectedEmployee.code, formState), `Updated ${selectedEmployee.code}.`)}>Save Employee</button>;
+    }
+    if (modal.type === 'status') {
+      return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeStatus(selectedEmployee.code, formState.status), `Status updated for ${selectedEmployee.code}.`)}>Update Status</button>;
+    }
+    if (modal.type === 'manager') {
+      return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeManager(selectedEmployee.code, formState.manager), `Manager updated for ${selectedEmployee.code}.`)}>Update Manager</button>;
+    }
+    if (modal.type === 'transfer') {
+      return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => transferEmployee(selectedEmployee.code, { department: formState.department, location: formState.location, role: formState.role, grade: formState.grade }), `Transfer details updated for ${selectedEmployee.code}.`)}>Save Change</button>;
+    }
+    if (modal.type === 'upload') {
+      return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => recordDocumentNote(selectedEmployee.code, { documentType: formState.documentType || 'Document', uploadNote: formState.uploadNote }), `Document note added for ${selectedEmployee.code}.`)}>Record Upload</button>;
+    }
+    if (modal.type === 'deactivate') {
+      return <button className="btn btn-danger" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeStatus(selectedEmployee.code, 'Inactive'), `${selectedEmployee.code} deactivated.`)}>Deactivate Employee</button>;
+    }
+    return null;
+  }
+
+  function modalTitle() {
+    const titles = {
+      edit: 'Edit Employee',
+      status: 'Change Status',
+      manager: 'Update Reporting Manager',
+      transfer: 'Transfer / Role Change',
+      upload: 'Upload Documents',
+      audit: 'Audit History',
+      deactivate: 'Deactivate Employee'
+    };
+    return titles[modal?.type] || 'Employee Action';
+  }
+
+  const activeCompany = companies.find((company) => company.id === activeCompanyId);
+  const activeCount = employees.filter((employee) => statusLabel(employee.status) === 'Active').length;
+  const onLeaveCount = employees.filter((employee) => statusLabel(employee.status) === 'On Leave').length;
+  const departmentsCount = new Set(employees.map((employee) => employee.department)).size;
+
   return (
-    <main className="app-shell-with-nav">
+    <main className="app-shell-with-nav" onClick={() => setOpenMenuCode(null)}>
       <style>{`
         :root {
           --admin-primary: #2563eb;
@@ -138,129 +331,211 @@ export default function AdminPage() {
         }
 
         button,
-        input {
+        input,
+        select {
           font: inherit;
         }
 
         h1,
         h2,
-        h3,
         p {
           margin-top: 0;
           letter-spacing: 0;
         }
 
-        .admin-shell {
-          display: grid;
-          grid-template-columns: 248px minmax(0, 1fr);
-          min-height: 100vh;
-          background: var(--admin-page);
+        .employee-master-workspace {
+          min-width: 0;
+          padding: 20px;
         }
 
-        .admin-sidebar {
-          position: sticky;
-          top: 0;
-          align-self: start;
+        .employee-master-shell {
           display: grid;
-          align-content: start;
-          gap: 24px;
-          min-height: 100vh;
-          border-right: 1px solid var(--admin-border);
-          background: var(--admin-panel);
-          padding: 24px 16px;
+          gap: 16px;
+          max-width: 1480px;
+          margin: 0 auto;
         }
 
-        .admin-brand {
+        .employee-master-header {
           display: flex;
-          align-items: center;
-          gap: 12px;
-          color: var(--admin-text);
-          text-decoration: none;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 20px;
         }
 
-        .admin-brand span {
+        .admin-command-center {
           display: grid;
-          place-items: center;
-          width: 38px;
-          height: 38px;
-          border-radius: 8px;
-          background: var(--admin-primary);
-          color: white;
+          grid-template-columns: minmax(0, 1fr) 360px;
+          gap: 16px;
+        }
+
+        .company-context-panel,
+        .module-map-panel {
+          min-width: 0;
+          padding: 18px;
+        }
+
+        .company-context-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 14px;
+        }
+
+        .company-picker {
+          display: grid;
+          gap: 6px;
+        }
+
+        .company-picker span {
+          color: var(--admin-muted);
+          font-size: 12px;
           font-weight: 800;
         }
 
-        .admin-brand strong {
-          font-size: 18px;
+        .company-picker select {
+          min-width: 250px;
+          min-height: 38px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: white;
+          color: #374151;
+          padding: 0 10px;
         }
 
-        .admin-nav {
+        .company-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .company-stat {
           display: grid;
           gap: 4px;
+          border: 1px solid var(--admin-border);
+          border-radius: 8px;
+          background: #fbfdff;
+          padding: 12px;
         }
 
-        .admin-nav a {
-          display: flex;
-          align-items: center;
+        .company-stat span {
+          color: var(--admin-muted);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .company-stat strong {
+          color: var(--admin-text);
+          font-size: 20px;
+          line-height: 1.2;
+        }
+
+        .company-detail-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .company-detail-list div {
+          display: grid;
+          gap: 2px;
+          border-bottom: 1px solid var(--admin-border);
+          padding-bottom: 10px;
+        }
+
+        .company-detail-list div:last-child {
+          border-bottom: 0;
+          padding-bottom: 0;
+        }
+
+        .company-detail-list span {
+          color: var(--admin-muted);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .module-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 12px;
-          min-height: 38px;
-          border-radius: 6px;
-          color: #374151;
-          font-weight: 700;
-          padding: 0 12px;
+        }
+
+        .module-card {
+          display: grid;
+          gap: 10px;
+          min-width: 0;
+          border: 1px solid var(--admin-border);
+          border-radius: 8px;
+          background: white;
+          color: inherit;
+          padding: 14px;
           text-decoration: none;
         }
 
-        .admin-nav a.active,
-        .admin-nav a:hover {
+        .module-card:hover {
+          border-color: #bfdbfe;
+          box-shadow: var(--admin-shadow);
+        }
+
+        .module-card header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .module-icon {
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
           background: var(--admin-primary-10);
           color: var(--admin-primary);
         }
 
-        .admin-workspace {
-          min-width: 0;
-          padding: 24px;
+        .module-card h3 {
+          margin: 0;
+          font-size: 15px;
+          line-height: 1.2;
         }
 
-        .admin-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 24px;
-          max-width: 1480px;
-          margin: 0 auto 24px;
+        .module-card p {
+          margin: 0;
+          color: var(--admin-muted);
+          font-size: 12px;
         }
 
         .eyebrow {
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           color: var(--admin-primary);
           font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
         }
 
-        .admin-header h1 {
-          margin-bottom: 8px;
-          font-size: 32px;
+        .employee-master-header h1 {
+          margin-bottom: 6px;
+          font-size: 30px;
           line-height: 1.2;
         }
 
-        .admin-header p:last-child,
-        .panel-top p {
+        .employee-master-header p,
+        .panel-copy,
+        .employee-subtext {
           margin-bottom: 0;
           color: var(--admin-muted);
-          font-size: 14px;
         }
 
         .admin-actions,
-        .panel-tools {
+        .panel-tools,
+        .modal-actions {
           display: flex;
           flex-wrap: wrap;
           justify-content: flex-end;
-          gap: 12px;
+          gap: 10px;
         }
 
-        .btn,
-        .contact-pill {
+        .btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -268,9 +543,10 @@ export default function AdminPage() {
           min-height: 36px;
           border: 1px solid transparent;
           border-radius: 6px;
-          padding: 0 16px;
+          padding: 0 14px;
+          color: inherit;
           font-size: 13px;
-          font-weight: 700;
+          font-weight: 800;
           text-decoration: none;
           cursor: pointer;
         }
@@ -278,7 +554,6 @@ export default function AdminPage() {
         .btn-primary {
           background: var(--admin-primary);
           color: white;
-          box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
         }
 
         .btn-primary:hover {
@@ -286,9 +561,14 @@ export default function AdminPage() {
         }
 
         .btn-secondary {
-          border-color: var(--admin-primary);
+          border-color: var(--admin-border);
           background: white;
-          color: var(--admin-primary);
+          color: #374151;
+        }
+
+        .btn-danger {
+          background: #dc2626;
+          color: white;
         }
 
         .card {
@@ -298,49 +578,9 @@ export default function AdminPage() {
           box-shadow: var(--admin-shadow);
         }
 
-        .admin-metrics {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
-          max-width: 1480px;
-          margin: 0 auto 16px;
-        }
-
-        .admin-metrics article {
-          display: grid;
-          gap: 8px;
-          padding: 16px;
-        }
-
-        .admin-metrics svg {
-          color: var(--admin-primary);
-        }
-
-        .admin-metrics span {
-          color: var(--admin-muted);
-          font-weight: 700;
-        }
-
-        .admin-metrics strong {
-          font-size: 24px;
-        }
-
-        .admin-grid,
-        .admin-bottom-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 360px;
-          gap: 16px;
-          max-width: 1480px;
-          margin: 0 auto 16px;
-        }
-
-        .admin-bottom-grid {
-          grid-template-columns: 1.15fr 0.85fr;
-        }
-
-        .admin-panel {
+        .employee-master-card {
           min-width: 0;
-          padding: 20px;
+          padding: 18px;
         }
 
         .panel-top {
@@ -348,33 +588,60 @@ export default function AdminPage() {
           align-items: flex-start;
           justify-content: space-between;
           gap: 16px;
-          margin-bottom: 16px;
+          margin-bottom: 14px;
         }
 
         .panel-top h2 {
           margin-bottom: 4px;
-          font-size: 20px;
+          font-size: 19px;
           line-height: 1.2;
         }
 
-        .admin-search {
+        .filter-strip {
+          display: grid;
+          grid-template-columns: minmax(260px, 1fr) repeat(4, minmax(130px, 180px)) auto;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+
+        .admin-search,
+        .admin-select,
+        .form-field {
           display: flex;
           align-items: center;
           gap: 8px;
-          width: 260px;
           min-height: 36px;
           border: 1px solid #d1d5db;
           border-radius: 6px;
           background: white;
           color: var(--admin-muted);
-          padding: 0 12px;
+          padding: 0 10px;
         }
 
-        .admin-search input {
-          border: 0;
-          outline: 0;
+        .form-field {
+          display: grid;
+          align-content: center;
+          gap: 4px;
+          min-height: 62px;
+          padding: 8px 10px;
+        }
+
+        .form-field span {
+          color: var(--admin-muted);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .admin-search input,
+        .admin-select select,
+        .form-field input,
+        .form-field select {
           min-width: 0;
           width: 100%;
+          border: 0;
+          background: transparent;
+          color: #374151;
+          outline: 0;
         }
 
         .icon-btn {
@@ -389,44 +656,65 @@ export default function AdminPage() {
           cursor: pointer;
         }
 
-        .admin-table-wrap {
+        .employee-table-wrap {
           overflow-x: auto;
           border: 1px solid var(--admin-border);
           border-radius: 8px;
         }
 
-        .admin-table {
+        .employee-table {
           width: 100%;
-          min-width: 760px;
+          min-width: 1040px;
           border-collapse: collapse;
         }
 
-        .admin-table th,
-        .admin-table td {
+        .employee-table th,
+        .employee-table td {
           border-bottom: 1px solid var(--admin-border);
-          padding: 14px 16px;
+          padding: 13px 14px;
           text-align: left;
+          vertical-align: top;
           white-space: nowrap;
         }
 
-        .admin-table th {
+        .employee-table th {
           background: #f8fafc;
           color: #374151;
           font-size: 12px;
           font-weight: 800;
         }
 
-        .admin-table tr:last-child td {
+        .employee-table tr:last-child td {
           border-bottom: 0;
         }
 
-        .admin-table td:first-child {
-          display: grid;
-          gap: 4px;
+        .employee-name {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 230px;
         }
 
-        .admin-table td:first-child span {
-          color: var(--admin-muted);
+        .avatar {
+          display: grid;
+          flex: 0 0 auto;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: var(--admin-primary-10);
+          color: var(--admin-primary);
+          font-weight: 900;
+        }
+
+        .employee-name strong {
+          display: block;
+          color: var(--admin-text);
+          font-size: 14px;
+        }
+
+        .employee-subtext {
+          display: block;
           font-size: 12px;
         }
 
@@ -455,146 +743,145 @@ export default function AdminPage() {
           color: #374151;
         }
 
-        .badge-info {
-          background: #e0f2fe;
-          color: #0369a1;
+        .actions-cell {
+          width: 70px;
         }
 
-        .selected-profile {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 16px;
-        }
-
-        .selected-profile img {
-          width: 72px;
-          height: 72px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        .selected-profile h2 {
-          margin: 8px 0 4px;
-          font-size: 20px;
-        }
-
-        .selected-profile p {
-          margin-bottom: 0;
-          color: var(--admin-muted);
-        }
-
-        .compact-definition {
+        .row-menu {
+          position: fixed;
+          z-index: 30;
           display: grid;
-          gap: 12px;
-          margin: 0 0 16px;
-        }
-
-        .compact-definition div {
-          display: flex;
-          justify-content: space-between;
-          gap: 16px;
-          border-bottom: 1px solid var(--admin-border);
-          padding-bottom: 12px;
-        }
-
-        .compact-definition dt {
-          color: var(--admin-muted);
-          font-weight: 700;
-        }
-
-        .compact-definition dd {
-          margin: 0;
-          font-weight: 800;
-          text-align: right;
-        }
-
-        .master-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .master-card {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: start;
-          gap: 12px;
+          width: 240px;
           border: 1px solid var(--admin-border);
           border-radius: 8px;
-          background: #fbfdff;
-          padding: 16px;
+          background: white;
+          box-shadow: 0 18px 32px rgba(16, 24, 40, 0.16);
+          padding: 6px;
         }
 
-        .section-icon {
-          display: grid;
-          place-items: center;
-          width: 36px;
-          height: 36px;
+        .row-menu button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 34px;
+          border: 0;
           border-radius: 6px;
+          background: transparent;
+          color: #374151;
+          padding: 0 10px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .row-menu a {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 34px;
+          border-radius: 6px;
+          color: #374151;
+          padding: 0 10px;
+          text-align: left;
+          text-decoration: none;
+        }
+
+        .row-menu button:hover,
+        .row-menu a:hover {
           background: var(--admin-primary-10);
           color: var(--admin-primary);
         }
 
-        .master-card h3 {
-          margin-bottom: 4px;
-          font-size: 14px;
+        .row-menu .danger-action {
+          margin-top: 6px;
+          border-top: 1px solid var(--admin-border);
+          border-radius: 0 0 6px 6px;
+          color: #dc2626;
+          padding-top: 8px;
         }
 
-        .master-card p {
-          margin-bottom: 12px;
-          color: var(--admin-muted);
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          background: rgba(17, 24, 39, 0.42);
+          padding: 0;
         }
 
-        .master-card div div {
+        .modal-panel {
+          display: grid;
+          width: min(720px, 100%);
+          max-height: min(720px, calc(100vh - 40px));
+          overflow: auto;
+          border-radius: 8px;
+          background: white;
+          box-shadow: 0 24px 60px rgba(16, 24, 40, 0.2);
+        }
+
+        .modal-header,
+        .modal-footer {
           display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 8px;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px;
         }
 
-        .master-card div div > span:first-child {
-          color: var(--admin-muted);
-          font-weight: 700;
+        .modal-header {
+          border-bottom: 1px solid var(--admin-border);
         }
 
-        .section-readiness,
-        .governance-list {
+        .modal-header h2 {
+          margin-bottom: 4px;
+          font-size: 20px;
+        }
+
+        .modal-body {
+          padding: 16px;
+        }
+
+        .modal-footer {
+          border-top: 1px solid var(--admin-border);
+          justify-content: flex-end;
+        }
+
+        .detail-grid,
+        .form-grid {
           display: grid;
-          gap: 8px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
         }
 
-        .section-readiness div {
+        .form-grid.single {
+          grid-template-columns: 1fr;
+        }
+
+        .detail-field {
           display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 12px;
-          min-height: 40px;
+          gap: 4px;
           border: 1px solid var(--admin-border);
           border-radius: 6px;
           background: #fbfdff;
-          padding: 0 12px;
+          padding: 10px;
         }
 
-        .section-readiness svg,
-        .governance-list svg {
-          color: var(--admin-primary);
-        }
-
-        .section-readiness span {
-          font-weight: 700;
-        }
-
-        .section-readiness strong {
-          color: #f59e0b;
+        .detail-field span {
+          color: var(--admin-muted);
           font-size: 12px;
+          font-weight: 800;
+          text-transform: capitalize;
         }
 
-        .section-readiness strong.good {
-          color: #16a34a;
+        .detail-field strong {
+          overflow-wrap: anywhere;
         }
 
-        .governance-list span {
+        .audit-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .audit-list span,
+        .danger-copy {
           display: flex;
           align-items: center;
           gap: 12px;
@@ -602,106 +889,195 @@ export default function AdminPage() {
           border: 1px solid var(--admin-border);
           border-radius: 6px;
           background: #fbfdff;
-          padding: 0 12px;
-          color: #374151;
-          font-weight: 700;
+          padding: 10px;
         }
 
-        @media (max-width: 1180px) {
-          .admin-shell,
-          .admin-grid,
-          .admin-bottom-grid {
+        .danger-copy {
+          align-items: flex-start;
+          background: #fef2f2;
+          color: #991b1b;
+        }
+
+        .danger-copy p {
+          margin-bottom: 0;
+        }
+
+        .toast {
+          position: fixed;
+          right: 18px;
+          bottom: 18px;
+          z-index: 70;
+          border: 1px solid #bbf7d0;
+          border-radius: 8px;
+          background: #f0fdf4;
+          color: #166534;
+          padding: 12px 14px;
+          font-weight: 800;
+          box-shadow: 0 12px 28px rgba(16, 24, 40, 0.12);
+        }
+
+        @media (max-width: 1280px) {
+          .filter-strip {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .admin-command-center,
+          .module-grid,
+          .company-stat-grid {
             grid-template-columns: 1fr;
           }
-
-          .admin-sidebar {
-            position: static;
-            min-height: auto;
-            border-right: 0;
-            border-bottom: 1px solid var(--admin-border);
-          }
-
-          .admin-nav {
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-          }
         }
 
-        @media (max-width: 820px) {
-          .admin-workspace {
+        @media (max-width: 900px) {
+          .employee-master-workspace {
             padding: 12px;
           }
 
-          .admin-header,
+          .employee-master-header,
+          .company-context-header,
           .panel-top {
             display: grid;
           }
 
           .admin-actions,
-          .panel-tools {
+          .panel-tools,
+          .modal-actions {
             justify-content: stretch;
           }
 
-          .admin-metrics,
-          .master-grid {
+          .filter-strip,
+          .detail-grid,
+          .form-grid {
             grid-template-columns: 1fr;
           }
 
-          .admin-search {
-            width: 100%;
-          }
-
-          .admin-nav {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+          .row-menu {
+            right: 12px;
+            left: auto !important;
+            width: min(240px, calc(100vw - 24px));
           }
         }
       `}</style>
       <AdminSideNavigation activePath="/admin" />
 
-      <section className="admin-workspace">
-        <header className="admin-header">
-          <div>
-            <p className="eyebrow">Core HR Admin</p>
-            <h1>Employee data control center</h1>
-            <p>Manage employee records and the masters that power profile fields across tenants.</p>
-          </div>
-          <div className="admin-actions">
-            <button className="btn btn-secondary" type="button"><Settings2 size={16} />Configure</button>
-            <button className="btn btn-primary" type="button"><Plus size={16} />Add Employee</button>
-          </div>
-        </header>
+      <section className="employee-master-workspace">
+        <div className="employee-master-shell">
+          <header className="employee-master-header">
+            <div>
+              <p className="eyebrow">Enterprise Admin</p>
+              <h1>{activeCompany?.name || 'Company Workspace'}</h1>
+              <p>Select a company first, then manage every HRMS module inside that company boundary.</p>
+            </div>
+            <div className="admin-actions">
+              <a className="btn btn-secondary" href="/admin/companies"><Building2 size={16} />Companies</a>
+              <button className="btn btn-secondary" type="button"><Upload size={16} />Bulk Upload</button>
+              <button className="btn btn-secondary" type="button"><Download size={16} />Export</button>
+              <button className="btn btn-primary" type="button"><Plus size={16} />Add Employee</button>
+            </div>
+          </header>
 
-        <section className="admin-metrics" aria-label="Core HR metrics">
-          <article className="card"><UsersRound size={20} /><span>Total Employees</span><strong>248</strong></article>
-          <article className="card"><BadgeCheck size={20} /><span>Profile Readiness</span><strong>91%</strong></article>
-          <article className="card"><FileCheck2 size={20} /><span>Pending Documents</span><strong>14</strong></article>
-          <article className="card"><ShieldCheck size={20} /><span>Verified Statutory</span><strong>96%</strong></article>
-        </section>
-
-        <section className="admin-grid">
-          <article className="card admin-panel employee-panel" id="employees">
-            <div className="panel-top">
-              <div>
-                <h2>Employee Directory</h2>
-                <p>Search and maintain Core HR employee profile records.</p>
-              </div>
-              <div className="panel-tools">
-                <label className="admin-search">
-                  <Search size={16} />
-                  <input placeholder="Search employees" />
+          <section className="admin-command-center">
+            <div className="card module-map-panel">
+              <div className="company-context-header">
+                <div>
+                  <h2>Company Module Map</h2>
+                  <p className="panel-copy">Each module below operates against the selected company context.</p>
+                </div>
+                <label className="company-picker">
+                  <span>Selected Company</span>
+                  <select value={activeCompanyId} onChange={(event) => selectCompany(event.target.value)}>
+                    {companies.map((company) => (
+                      <option value={company.id} key={company.id}>{company.name}</option>
+                    ))}
+                  </select>
                 </label>
-                <button className="icon-btn" type="button" aria-label="Filter employees"><Filter size={16} /></button>
+              </div>
+
+              <div className="module-grid">
+                {adminModules.map(({ title, icon: Icon, href, status, summary }) => (
+                  <a className="module-card" href={href} key={title}>
+                    <header>
+                      <span className="module-icon"><Icon size={18} /></span>
+                      <span className="badge badge-neutral">{status}</span>
+                    </header>
+                    <div>
+                      <h3>{title}</h3>
+                      <p>{summary}</p>
+                    </div>
+                  </a>
+                ))}
               </div>
             </div>
 
-            <div className="admin-table-wrap">
-              <table className="admin-table">
+            <aside className="card company-context-panel">
+              <div className="panel-top">
+                <div>
+                  <h2>Company Context</h2>
+                  <p className="panel-copy">Active tenant for admin operations.</p>
+                </div>
+                <Settings2 size={18} />
+              </div>
+              <div className="company-detail-list">
+                <div><span>Company</span><strong>{activeCompany?.name || '-'}</strong></div>
+                <div><span>Domain</span><strong>{activeCompany?.domain || activeCompany?.slug || '-'}</strong></div>
+                <div><span>Country / Timezone</span><strong>{activeCompany ? `${activeCompany.country} / ${activeCompany.timezone}` : '-'}</strong></div>
+                <div><span>HR Contact</span><strong>{activeCompany?.hrContactEmail || '-'}</strong></div>
+              </div>
+            </aside>
+          </section>
+
+          <section className="company-stat-grid" aria-label="Selected company snapshot">
+            <div className="company-stat"><span>Total Employees</span><strong>{employees.length}</strong></div>
+            <div className="company-stat"><span>Active</span><strong>{activeCount}</strong></div>
+            <div className="company-stat"><span>On Leave</span><strong>{onLeaveCount}</strong></div>
+            <div className="company-stat"><span>Departments</span><strong>{departmentsCount}</strong></div>
+          </section>
+
+          <section className="card employee-master-card" id="employees">
+            <div className="panel-top">
+              <div>
+                <h2>Employee Master</h2>
+                <p className="panel-copy">Search, filter and manage employee records for {activeCompany?.name || 'the selected company'}.</p>
+              </div>
+              <div className="panel-tools">
+                <button className="btn btn-secondary" type="button"><UsersRound size={16} />{employees.length} Records</button>
+              </div>
+            </div>
+
+            <div className="filter-strip" aria-label="Employee filters">
+              <label className="admin-search">
+                <Search size={16} />
+                <input placeholder="Search by name, code, role or manager" />
+              </label>
+              <label className="admin-select">
+                <select aria-label="Status"><option>Status</option><option>Active</option><option>On Leave</option><option>Inactive</option></select>
+              </label>
+              <label className="admin-select">
+                <select aria-label="Department"><option>Department</option><option>Engineering</option><option>Product</option><option>Finance</option></select>
+              </label>
+              <label className="admin-select">
+                <select aria-label="Location"><option>Location</option><option>Mumbai HQ</option><option>Bengaluru</option><option>Delhi NCR</option></select>
+              </label>
+              <label className="admin-select">
+                <select aria-label="Employee type"><option>Type</option><option>Permanent</option><option>Contract</option></select>
+              </label>
+              <button className="icon-btn" type="button" aria-label="Open advanced filters"><Filter size={16} /></button>
+            </div>
+
+            <div className="employee-table-wrap">
+              {isLoading && <div className="detail-field"><strong>Loading employee records...</strong></div>}
+              {error && <div className="danger-copy"><ShieldAlert size={22} /><p>{error}</p></div>}
+              {!isLoading && !error && employees.length === 0 && <div className="detail-field"><strong>No employees found.</strong></div>}
+              <table className="employee-table">
                 <thead>
                   <tr>
                     <th>Employee</th>
+                    <th>Legal Entity</th>
                     <th>Department</th>
                     <th>Location</th>
+                    <th>Employment</th>
+                    <th>Manager</th>
                     <th>Status</th>
-                    <th>Profile</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -709,101 +1085,112 @@ export default function AdminPage() {
                   {employees.map((employee) => (
                     <tr key={employee.code}>
                       <td>
-                        <strong>{employee.name}</strong>
-                        <span>{employee.code} · {employee.role}</span>
+                        <div className="employee-name">
+                          <span className="avatar">{employee.name.slice(0, 1)}</span>
+                          <div>
+                            <strong>{employee.name}</strong>
+                            <span className="employee-subtext">{employee.code} | {employee.role}</span>
+                          </div>
+                        </div>
                       </td>
+                      <td>{employee.entity}</td>
                       <td>{employee.department}</td>
                       <td>{employee.location}</td>
-                      <td><span className={`badge ${statusClass(employee.status)}`}>{employee.status}</span></td>
-                      <td>{employee.completeness}</td>
-                      <td><button className="icon-btn" type="button" aria-label={`Open actions for ${employee.name}`}><MoreHorizontal size={16} /></button></td>
+                      <td>
+                        <strong>{employee.type}</strong>
+                        <span className="employee-subtext">{employee.grade} | Joined {formatDate(employee.joinDate)}</span>
+                      </td>
+                      <td>{employee.manager}</td>
+                      <td><span className={`badge ${statusClass(employee.status)}`}>{statusLabel(employee.status)}</span></td>
+                      <td className="actions-cell" onClick={(event) => event.stopPropagation()}>
+                        <button
+                          className="icon-btn"
+                          type="button"
+                          aria-expanded={openMenuCode === employee.code}
+                          aria-label={`Open actions for ${employee.name}`}
+                          onClick={(event) => toggleRowMenu(event, employee.code)}
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </article>
-
-          <aside className="card admin-panel employee-detail">
-            <div className="selected-profile">
-              <img src="https://i.pravatar.cc/160?img=12" alt="" />
-              <div>
-                <span className="badge badge-success">Active</span>
-                <h2>Rahul Sharma</h2>
-                <p>Senior Software Engineer · EMP001245</p>
-              </div>
-            </div>
-            <dl className="compact-definition">
-              <div><dt>Manager</dt><dd>Sneha Iyer</dd></div>
-              <div><dt>Department</dt><dd>Engineering</dd></div>
-              <div><dt>Joining Date</dt><dd>15 Feb 2022</dd></div>
-              <div><dt>Tenant</dt><dd>Network18 Demo</dd></div>
-            </dl>
-            <a className="btn btn-secondary" href="/">View Profile</a>
-          </aside>
-        </section>
-
-        <section className="card admin-panel" id="masters">
-          <div className="panel-top">
-            <div>
-              <h2>Core HR Masters</h2>
-              <p>Frontend-only master modules required to control selectable fields on employee profiles.</p>
-            </div>
-            <button className="btn btn-secondary" type="button"><Plus size={16} />New Master Value</button>
-          </div>
-          <div className="master-grid">
-            {masterGroups.map(({ title, icon: Icon, description, count, health }) => (
-              <article className="master-card" key={title}>
-                <span className="section-icon"><Icon size={18} /></span>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{description}</p>
-                  <div>
-                    <span>{count}</span>
-                    <span className={`badge ${statusClass(health)}`}>{health}</span>
-                  </div>
-                </div>
-                <ChevronRight size={17} />
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="admin-bottom-grid">
-          <article className="card admin-panel" id="sections">
-            <div className="panel-top">
-              <div>
-                <h2>Profile Section Control</h2>
-                <p>Monitor which sections are complete, masked, verified or restricted.</p>
-              </div>
-            </div>
-            <div className="section-readiness">
-              {sectionReadiness.map(([name, status, Icon]) => (
-                <div key={name}>
-                  <Icon size={17} />
-                  <span>{name}</span>
-                  <strong className={status.includes('Complete') || status.includes('Verified') ? 'good' : ''}>{status}</strong>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="card admin-panel" id="governance">
-            <div className="panel-top">
-              <div>
-                <h2>Governance Queue</h2>
-                <p>Static preview of the checks that would matter before database workflows are added.</p>
-              </div>
-            </div>
-            <div className="governance-list">
-              <span><CheckCircle2 size={17} />Tenant isolation planned for all records</span>
-              <span><ShieldCheck size={17} />Sensitive profile fields masked by default</span>
-              <span><CalendarDays size={17} />Profile and master change audits required later</span>
-              <span><FileCheck2 size={17} />Document expiry and verification rules prepared</span>
-            </div>
-          </article>
-        </section>
+          </section>
+        </div>
       </section>
+
+      {openMenuCode && (
+        <div
+          className="row-menu"
+          role="menu"
+          style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {(() => {
+            const employee = employees.find((item) => item.code === openMenuCode);
+            if (!employee) return null;
+            return (
+              <>
+                <a href={`/admin/profile/${employee.code}`}><UserRound size={15} />View Profile</a>
+                <button type="button" onClick={() => openModal('edit', employee)}><Edit3 size={15} />Edit Employee</button>
+                <button type="button" onClick={() => openModal('status', employee)}><ToggleLeft size={15} />Change Status</button>
+                <button type="button" onClick={() => openModal('manager', employee)}><UsersRound size={15} />Update Reporting Manager</button>
+                <button type="button" onClick={() => openModal('transfer', employee)}><GitBranch size={15} />Transfer / Role Change</button>
+                <button type="button" onClick={() => openModal('upload', employee)}><FileUp size={15} />Upload Documents</button>
+                <button type="button" onClick={() => openModal('audit', employee)}><FileClock size={15} />View Audit History</button>
+                <button type="button" onClick={() => downloadEmployee(employee)}><FileDown size={15} />Download Employee Record</button>
+                <button className="danger-action" type="button" onClick={() => openModal('deactivate', employee)}><ShieldAlert size={15} />Deactivate Employee</button>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {modal && selectedEmployee && (
+        <div className="modal-backdrop" role="presentation" onClick={closeModal}>
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="employee-action-title" onClick={(event) => event.stopPropagation()}>
+            <header className="modal-header">
+              <div>
+                <h2 id="employee-action-title">{modalTitle()}</h2>
+                <p className="panel-copy">{selectedEmployee.name} | {selectedEmployee.code}</p>
+              </div>
+              <button className="icon-btn" type="button" aria-label="Close action modal" onClick={closeModal}><X size={16} /></button>
+            </header>
+            <div className="modal-body">{renderModalBody()}</div>
+            <footer className="modal-footer">
+              <div className="modal-actions">
+                {modal.type !== 'audit' && <button className="btn btn-secondary" type="button" onClick={closeModal}>Cancel</button>}
+                {renderModalFooter()}
+              </div>
+            </footer>
+          </section>
+        </div>
+      )}
+
+      {toast && <button className="toast" type="button" onClick={() => setToast('')}>{toast}</button>}
     </main>
+  );
+}
+
+function Field({ label, value = '', onChange, placeholder = '' }) {
+  return (
+    <label className="form-field">
+      <span>{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+    </label>
+  );
+}
+
+function SelectField({ label, value = '', options, onChange }) {
+  return (
+    <label className="form-field">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {options.map((option) => <option key={option}>{option}</option>)}
+      </select>
+    </label>
   );
 }

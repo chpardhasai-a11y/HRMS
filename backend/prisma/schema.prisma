@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  employee
+  hr_admin
+  super_admin
+}
+
+enum EmployeeStatus {
+  Active
+  OnLeave
+  Inactive
+  Resigned
+  Terminated
+}
+
+model Company {
+  id             String             @id @default(cuid())
+  name           String
+  slug           String             @unique
+  domain         String?
+  country        String             @default("India")
+  timezone       String             @default("Asia/Kolkata")
+  logoUrl        String?
+  hrContactEmail String?
+  isActive       Boolean            @default(true)
+  users          User[]
+  passwordResetTokens PasswordResetToken[]
+  securityAuditLogs SecurityAuditLog[]
+  employees      Employee[]
+  profiles       EmployeeProfile[]
+  documents      EmployeeDocument[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model User {
+  id           String    @id @default(cuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id])
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(employee)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  passwordChangedAt DateTime?
+  employeeCode String?
+  employee     Employee? @relation(fields: [employeeCode], references: [code])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  auditLogs    AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  securityAuditLogs SecurityAuditLog[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id])
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([expiresAt])
+}
+
+model SecurityAuditLog {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([userId])
+}
+
+model Employee {
+  id               String             @id @default(cuid())
+  companyId        String
+  company          Company            @relation(fields: [companyId], references: [id])
+  code             String             @unique
+  name             String
+  email            String             @unique
+  phone            String?
+  role             String
+  department       String
+  entity           String
+  location         String
+  manager          String
+  status           EmployeeStatus     @default(Active)
+  type             String
+  grade            String
+  joinDate         DateTime
+  documentNote     String             @default("No recent uploads")
+  profile          EmployeeProfile?
+  documents        EmployeeDocument[]
+  users            User[]
+  auditLogs        AuditLog[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model EmployeeProfile {
+  id                  String   @id @default(cuid())
+  companyId           String
+  company             Company  @relation(fields: [companyId], references: [id])
+  employeeCode        String   @unique
+  employee            Employee @relation(fields: [employeeCode], references: [code], onDelete: Cascade)
+  dateOfBirth         DateTime?
+  gender              String?
+  maritalStatus       String?
+  bloodGroup          String?
+  nationality         String?
+  emergencyContact    String?
+  emergencyPhone      String?
+  workMode            String?
+  noticePeriod        String?
+  shift               String?
+  businessUnit        String?
+  team                String?
+  costCenter          String?
+  hrPartner           String?
+  currentAddress      String?
+  permanentAddress    String?
+  previousEmployment  Json?
+  education           Json?
+  bankDetails         Json?
+  statutoryDetails    Json?
+  salaryDetails       Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model EmployeeDocument {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  employeeCode String
+  employee     Employee @relation(fields: [employeeCode], references: [code], onDelete: Cascade)
+  type         String
+  status       String
+  note         String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  employeeCode String
+  employee     Employee @relation(fields: [employeeCode], references: [code], onDelete: Cascade)
+  actorUserId  String?
+  actor        User?    @relation(fields: [actorUserId], references: [id])
+  action       String
+  before       Json?
+  after        Json?
+  createdAt    DateTime @default(now())
+}

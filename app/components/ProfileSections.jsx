@@ -3,7 +3,6 @@
 import {
   BriefcaseBusiness,
   Building2,
-  ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
   FileCheck2,
@@ -11,10 +10,9 @@ import {
   Home as HomeIcon,
   IdCard,
   Landmark,
-  UserRound,
-  X
+  UserRound
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 const bankDetails = [
   ['Bank Name', 'HDFC Bank'],
@@ -99,18 +97,90 @@ const sectionMeta = {
   }
 };
 
-function DefinitionGrid({ items }) {
-  return (
-    <dl className="definition-grid">
-      {items.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
+const profileTabs = [
+  {
+    id: 'about',
+    label: 'About',
+    sections: ['personal-info', 'location-address']
+  },
+  {
+    id: 'job',
+    label: 'Job',
+    sections: ['employment', 'organization-unit']
+  },
+  {
+    id: 'documents',
+    label: 'Documents',
+    sections: ['documents', 'statutory-details']
+  },
+  {
+    id: 'finance',
+    label: 'Finance',
+    sections: ['bank-details', 'salary-details']
+  },
+  {
+    id: 'history',
+    label: 'History',
+    sections: ['previous-employment', 'education-details']
+  }
+];
+
+const sectionDetails = {
+  'personal-info': {
+    rows: [
+      ['Date of Birth', '12 Aug 1993'],
+      ['Blood Group', 'B+'],
+      ['Gender', 'Male'],
+      ['Nationality', 'Indian'],
+      ['Marital Status', 'Married'],
+      ['Languages Known', 'English, Hindi']
+    ]
+  },
+  employment: {
+    rows: [
+      ['Employee Type', 'Permanent'],
+      ['Employment Status', 'Active'],
+      ['Work Mode', 'Hybrid'],
+      ['Notice Period', '60 days'],
+      ['Joining Date', '15 Feb 2022'],
+      ['Grade', 'G6']
+    ]
+  },
+  'organization-unit': {
+    rows: [
+      ['Business Unit', 'Digital Products'],
+      ['Department', 'Engineering'],
+      ['Team', 'HRMS Platform'],
+      ['Designation', 'Senior Software Engineer'],
+      ['Reporting Manager', 'Sneha Iyer'],
+      ['Cost Center', 'ENG-PLT-204']
+    ]
+  },
+  'location-address': {
+    addresses: [
+      ['Current Address', 'Primary', 'Flat 1402, Orchid Heights, Powai, Mumbai, Maharashtra 400076'],
+      ['Permanent Address', '', '45 Green Park Road, Jaipur, Rajasthan 302004']
+    ]
+  },
+  'previous-employment': {
+    timeline: true
+  },
+  documents: {
+    documents: true
+  },
+  'bank-details': {
+    rows: bankDetails
+  },
+  'statutory-details': {
+    rows: statutoryDetails
+  },
+  'education-details': {
+    education: true
+  },
+  'salary-details': {
+    salary: true
+  }
+};
 
 function SalaryGrid() {
   return (
@@ -122,27 +192,6 @@ function SalaryGrid() {
           <small>{note}</small>
         </article>
       ))}
-    </div>
-  );
-}
-
-function AddressBlock({ includeOffice = false }) {
-  return (
-    <div className="address-block">
-      {includeOffice && (
-        <div>
-          <h3>Office Location</h3>
-          <p>Mumbai HQ · Digital Products floor</p>
-        </div>
-      )}
-      <div>
-        <h3>Current Address</h3>
-        <p>Flat 1402, Orchid Heights, Powai, Mumbai, Maharashtra 400076</p>
-      </div>
-      <div>
-        <h3>Permanent Address</h3>
-        <p>45 Green Park Road, Jaipur, Rajasthan 302004</p>
-      </div>
     </div>
   );
 }
@@ -174,7 +223,6 @@ function DocumentGrid({ items }) {
             <h3>{name}</h3>
             <span className={`badge ${tone}`}>{status}</span>
           </div>
-          <ChevronRight size={16} />
         </article>
       ))}
     </div>
@@ -195,195 +243,96 @@ function EducationList({ items }) {
   );
 }
 
-function SectionCard({ icon: Icon, title, id, onOpen, children }) {
+function DetailRows({ items }) {
   return (
-    <section className="profile-section card" id={id}>
-      <header className="section-header">
-        <div>
-          <span className="section-icon"><Icon size={18} /></span>
-          <h2>{title}</h2>
+    <dl className="section-detail-grid">
+      {items.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
         </div>
-        <button
-          className="section-arrow"
-          type="button"
-          aria-label={`Open ${title} details`}
-          onClick={(event) => onOpen(id, event.currentTarget)}
-        >
-          <ChevronRight size={18} />
-        </button>
-      </header>
-      {children}
-    </section>
+      ))}
+    </dl>
   );
 }
 
-function SectionDetailBody({ id, employee, personalInfo, employment, orgUnit, documents, previousEmployment, education }) {
-  if (id === 'personal-info') {
-    return (
-      <DefinitionGrid items={[
-        ['Employee Code', employee.code],
-        ['Full Name', employee.name],
-        ['Email', employee.email],
-        ['Phone', employee.phone],
-        ...personalInfo
-      ]} />
-    );
-  }
-
-  if (id === 'employment') {
-    return (
-      <DefinitionGrid items={[
-        ['Role', employee.role],
-        ['Department', employee.department],
-        ['Joining Date', employee.joined],
-        ['Employment Status', employee.status],
-        ...employment
-      ]} />
-    );
-  }
-
-  if (id === 'organization-unit') return <DefinitionGrid items={orgUnit} />;
-  if (id === 'location-address') return <AddressBlock includeOffice />;
-  if (id === 'previous-employment') return <TimelineList items={previousEmployment} />;
-  if (id === 'documents') return <DocumentGrid items={documents} />;
-  if (id === 'bank-details') return <DefinitionGrid items={bankDetails} />;
-  if (id === 'statutory-details') return <DefinitionGrid items={statutoryDetails} />;
-  if (id === 'education-details') return <EducationList items={education} />;
-  if (id === 'salary-details') return <SalaryGrid />;
-
-  return null;
-}
-
-function SectionDetailModal({ sectionId, onClose, returnFocusTo, data }) {
-  const modalRef = useRef(null);
-  const section = sectionId ? sectionMeta[sectionId] : null;
-
-  useEffect(() => {
-    if (!section) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    modalRef.current?.focus();
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
-      returnFocusTo.current?.focus();
-    };
-  }, [onClose, returnFocusTo, section]);
-
-  if (!section) return null;
-
-  const Icon = section.icon;
-
+function AddressRows({ items }) {
   return (
-    <div
-      className="section-modal-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        className="section-modal card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="section-modal-title"
-        tabIndex={-1}
-        ref={modalRef}
-      >
-        <header className="section-modal-header">
-          <div>
-            <span className="section-icon"><Icon size={18} /></span>
-            <div>
-              <p className="eyebrow">Section Details</p>
-              <h2 id="section-modal-title">{section.title}</h2>
-              <p>{section.summary}</p>
-            </div>
-          </div>
-          <div className="section-modal-actions">
-            <span className="badge badge-neutral">{section.status}</span>
-            <button className="icon-btn" type="button" aria-label="Close details" onClick={onClose}>
-              <X size={17} />
-            </button>
-          </div>
-        </header>
-        <div className="section-modal-body">
-          <SectionDetailBody id={sectionId} {...data} />
-        </div>
-      </section>
+    <div className="section-address-grid">
+      {items.map(([label, badge, value]) => (
+        <article key={label}>
+          <h3>{label} {badge && <span className="badge badge-success">{badge}</span>}</h3>
+          <p>{value}</p>
+        </article>
+      ))}
     </div>
   );
 }
 
+function ProfileSectionPanel({ id, data }) {
+  const section = sectionMeta[id];
+  const details = { ...sectionDetails[id] };
+  const Icon = section.icon;
+  const profile = data.employee?.profile || {};
+
+  if (id === 'personal-info') details.rows = data.personalInfo;
+  if (id === 'employment') details.rows = data.employment;
+  if (id === 'organization-unit') details.rows = data.orgUnit;
+  if (id === 'location-address' && (profile.currentAddress || profile.permanentAddress)) {
+    details.addresses = [
+      ['Current Address', 'Primary', profile.currentAddress],
+      ['Permanent Address', '', profile.permanentAddress]
+    ].filter(([, , value]) => value);
+  }
+  if (id === 'bank-details' && profile.bankDetails) details.rows = profile.bankDetails;
+  if (id === 'statutory-details' && profile.statutoryDetails) details.rows = profile.statutoryDetails;
+
+  return (
+    <section className="profile-section-panel" id={id}>
+      <header className="profile-section-panel-header">
+        <div>
+          <span className="section-icon"><Icon size={18} /></span>
+          <h2>{section.title}</h2>
+        </div>
+      </header>
+      {details.rows && <DetailRows items={details.rows} />}
+      {details.addresses && <AddressRows items={details.addresses} />}
+      {details.timeline && <TimelineList items={data.previousEmployment} />}
+      {details.documents && <DocumentGrid items={data.documents} />}
+      {details.education && <EducationList items={data.education} />}
+      {details.salary && <SalaryGrid />}
+    </section>
+  );
+}
+
 export default function ProfileSections(props) {
-  const [selectedSection, setSelectedSection] = useState(null);
-  const lastTriggerRef = useRef(null);
-
-  const openSection = useCallback((id, trigger) => {
-    lastTriggerRef.current = trigger;
-    setSelectedSection(id);
-  }, []);
-
-  const closeSection = useCallback(() => {
-    setSelectedSection(null);
-  }, []);
+  const [activeTab, setActiveTab] = useState(profileTabs[0].id);
+  const activeSections = profileTabs.find((tab) => tab.id === activeTab)?.sections ?? profileTabs[0].sections;
 
   return (
     <>
-      <div className="profile-content">
-        <SectionCard icon={UserRound} title="Personal Info" id="personal-info" onOpen={openSection}>
-          <DefinitionGrid items={props.personalInfo} />
-        </SectionCard>
+      <nav className="profile-tabs" role="tablist" aria-label="Profile section groups">
+        {profileTabs.map((tab) => (
+          <button
+            className={tab.id === activeTab ? 'active' : undefined}
+            type="button"
+            role="tab"
+            aria-selected={tab.id === activeTab}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
 
-        <SectionCard icon={BriefcaseBusiness} title="Employment" id="employment" onOpen={openSection}>
-          <DefinitionGrid items={props.employment} />
-        </SectionCard>
-
-        <SectionCard icon={Building2} title="Organization Unit" id="organization-unit" onOpen={openSection}>
-          <DefinitionGrid items={props.orgUnit} />
-        </SectionCard>
-
-        <SectionCard icon={HomeIcon} title="Location/Address" id="location-address" onOpen={openSection}>
-          <AddressBlock />
-        </SectionCard>
-
-        <SectionCard icon={ClipboardCheck} title="Previous Employment" id="previous-employment" onOpen={openSection}>
-          <TimelineList items={props.previousEmployment} />
-        </SectionCard>
-
-        <SectionCard icon={FileCheck2} title="Documents" id="documents" onOpen={openSection}>
-          <DocumentGrid items={props.documents} />
-        </SectionCard>
-
-        <SectionCard icon={Landmark} title="Bank Details" id="bank-details" onOpen={openSection}>
-          <DefinitionGrid items={bankDetails} />
-        </SectionCard>
-
-        <SectionCard icon={IdCard} title="Statutory Details" id="statutory-details" onOpen={openSection}>
-          <DefinitionGrid items={statutoryDetails} />
-        </SectionCard>
-
-        <SectionCard icon={GraduationCap} title="Education Details" id="education-details" onOpen={openSection}>
-          <EducationList items={props.education} />
-        </SectionCard>
-
-        <SectionCard icon={CircleDollarSign} title="Salary Details" id="salary-details" onOpen={openSection}>
-          <SalaryGrid />
-        </SectionCard>
+      <div className="profile-content card">
+        <div className="profile-section-stack">
+          {activeSections.map((sectionId) => (
+            <ProfileSectionPanel id={sectionId} data={props} key={sectionId} />
+          ))}
+        </div>
       </div>
-
-      <SectionDetailModal
-        sectionId={selectedSection}
-        onClose={closeSection}
-        returnFocusTo={lastTriggerRef}
-        data={props}
-      />
     </>
   );
 }
