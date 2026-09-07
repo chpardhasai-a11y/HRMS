@@ -14,8 +14,8 @@ export class ForgotPasswordDto {
   email!: string;
 
   @IsOptional()
-  @IsIn(['employee', 'admin'])
-  audience?: 'employee' | 'admin';
+  @IsIn(['employee', 'admin', 'platform', 'org'])
+  audience?: 'employee' | 'admin' | 'platform' | 'org';
 }
 
 export class ResetPasswordDto {

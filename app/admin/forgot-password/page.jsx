@@ -1,5 +1,5 @@
-import { ForgotPasswordForm } from '../../components/AuthForms';
+import { redirect } from 'next/navigation';
 
-export default function AdminForgotPasswordPage() {
-  return <ForgotPasswordForm audience="admin" title="Admin Forgot Password" loginHref="/admin/login" />;
+export default function AdminForgotPasswordRedirectPage() {
+  redirect('/org-admin/forgot-password');
 }

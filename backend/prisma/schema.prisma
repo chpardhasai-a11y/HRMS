@@ -9,8 +9,8 @@ datasource db {
 
 enum UserRole {
   employee
-  hr_admin
-  super_admin
+  org_admin
+  platform_admin
 }
 
 enum EmployeeStatus {

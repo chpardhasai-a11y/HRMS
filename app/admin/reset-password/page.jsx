@@ -1,5 +1,5 @@
-import { ResetPasswordForm } from '../../components/AuthForms';
+import { redirect } from 'next/navigation';
 
-export default function AdminResetPasswordPage() {
-  return <ResetPasswordForm loginHref="/admin/login" />;
+export default function AdminResetPasswordRedirectPage() {
+  redirect('/org-admin/reset-password');
 }

@@ -20,7 +20,7 @@ export class EmployeesController {
   constructor(private readonly employees: EmployeesService) {}
 
   @Get()
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   findAll(
     @CurrentUser() user: RequestUser,
     @Query('search') search?: string,
@@ -33,49 +33,49 @@ export class EmployeesController {
   }
 
   @Post()
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   create(@Body() dto: CreateEmployeeDto, @CurrentUser() user: RequestUser) {
     return this.employees.create(dto, user);
   }
 
   @Get(':code')
-  @Roles(UserRole.employee, UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.employee, UserRole.org_admin)
   findOne(@Param('code') code: string, @CurrentUser() user: RequestUser) {
     return this.employees.findByCode(code, user);
   }
 
   @Patch(':code')
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   update(@Param('code') code: string, @Body() dto: UpdateEmployeeDto, @CurrentUser() user: RequestUser) {
     return this.employees.update(code, dto, user);
   }
 
   @Patch(':code/status')
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   updateStatus(@Param('code') code: string, @Body() dto: UpdateStatusDto, @CurrentUser() user: RequestUser) {
     return this.employees.updateStatus(code, dto, user);
   }
 
   @Patch(':code/manager')
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   updateManager(@Param('code') code: string, @Body() dto: UpdateManagerDto, @CurrentUser() user: RequestUser) {
     return this.employees.updateManager(code, dto, user);
   }
 
   @Patch(':code/transfer')
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   transfer(@Param('code') code: string, @Body() dto: TransferEmployeeDto, @CurrentUser() user: RequestUser) {
     return this.employees.transfer(code, dto, user);
   }
 
   @Patch(':code/documents')
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   recordDocument(@Param('code') code: string, @Body() dto: DocumentNoteDto, @CurrentUser() user: RequestUser) {
     return this.employees.recordDocumentNote(code, dto, user);
   }
 
   @Get(':code/audit')
-  @Roles(UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.org_admin)
   audit(@Param('code') code: string, @CurrentUser() user: RequestUser) {
     return this.employees.getAudit(code, user);
   }

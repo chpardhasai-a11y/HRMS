@@ -105,6 +105,7 @@ body {
   align-self: start;
   display: grid;
   align-content: start;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--space-6);
   min-height: 100vh;
   border-right: 1px solid var(--color-border);
@@ -244,8 +245,49 @@ body {
   color: var(--color-primary);
 }
 
+.sidenav-footer {
+  display: grid;
+  gap: var(--space-2);
+  align-self: end;
+}
+
+.sidenav-logout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-neutral-700);
+  font-weight: 800;
+  padding: 0 var(--space-3);
+  text-align: left;
+}
+
+.sidenav-logout svg {
+  flex: 0 0 auto;
+}
+
+.sidenav-logout span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sidenav-logout:hover {
+  background: #fef2f2;
+  color: var(--color-error);
+}
+
+.sidenav-logout:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .admin-only-sidenav {
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--space-4);
   height: 100vh;
   min-height: 100vh;
@@ -313,6 +355,19 @@ body {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+}
+
+.app-sidenav-collapsed .sidenav-footer {
+  width: 100%;
+}
+
+.app-sidenav-collapsed .sidenav-logout {
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  margin: 0 auto;
+  padding: 0;
 }
 
 @media (max-width: 980px) {
@@ -426,6 +481,44 @@ small,
   font-size: var(--font-small);
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.admin-breadcrumbs {
+  margin-bottom: var(--space-2);
+  color: var(--color-neutral-500);
+  font-size: var(--font-small);
+  font-weight: 800;
+}
+
+.admin-breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.admin-breadcrumbs a,
+.admin-breadcrumbs span {
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-breadcrumbs a:hover {
+  color: var(--color-primary);
+}
+
+.admin-breadcrumbs li:last-child span {
+  color: var(--color-neutral-900);
 }
 
 .card {

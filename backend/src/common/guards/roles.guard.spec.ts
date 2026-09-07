@@ -13,12 +13,12 @@ function context(role: UserRole): ExecutionContext {
 
 describe('RolesGuard', () => {
   it('allows users with a required role', () => {
-    const guard = new RolesGuard({ getAllAndOverride: jest.fn().mockReturnValue([UserRole.hr_admin]) } as unknown as Reflector);
-    expect(guard.canActivate(context(UserRole.hr_admin))).toBe(true);
+    const guard = new RolesGuard({ getAllAndOverride: jest.fn().mockReturnValue([UserRole.org_admin]) } as unknown as Reflector);
+    expect(guard.canActivate(context(UserRole.org_admin))).toBe(true);
   });
 
   it('blocks users without a required role', () => {
-    const guard = new RolesGuard({ getAllAndOverride: jest.fn().mockReturnValue([UserRole.super_admin]) } as unknown as Reflector);
+    const guard = new RolesGuard({ getAllAndOverride: jest.fn().mockReturnValue([UserRole.platform_admin]) } as unknown as Reflector);
     expect(guard.canActivate(context(UserRole.employee))).toBe(false);
   });
 });

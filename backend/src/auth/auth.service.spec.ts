@@ -23,7 +23,7 @@ describe('AuthService', () => {
   it('returns a JWT for valid credentials', async () => {
     const passwordHash = await bcrypt.hash('Password@123', 4);
     const service = new AuthService(
-      { findByEmail: jest.fn().mockResolvedValue({ id: 'u1', companyId: 'c1', email: 'admin@nw18.com', passwordHash, role: 'super_admin', isActive: true, employeeCode: null }) } as any,
+      { findByEmail: jest.fn().mockResolvedValue({ id: 'u1', companyId: 'c1', email: 'admin@nw18.com', passwordHash, role: 'platform_admin', isActive: true, employeeCode: null }) } as any,
       { signAsync: jest.fn().mockResolvedValue('token') } as unknown as JwtService,
       {} as any,
       prisma as any
@@ -31,7 +31,7 @@ describe('AuthService', () => {
 
     await expect(service.login('admin@nw18.com', 'Password@123')).resolves.toMatchObject({
       accessToken: 'token',
-      user: { companyId: 'c1', email: 'admin@nw18.com', role: 'super_admin' }
+      user: { companyId: 'c1', email: 'admin@nw18.com', role: 'platform_admin' }
     });
   });
 

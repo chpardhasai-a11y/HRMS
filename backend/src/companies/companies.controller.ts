@@ -13,25 +13,25 @@ export class CompaniesController {
   constructor(private readonly companies: CompaniesService) {}
 
   @Get()
-  @Roles(UserRole.super_admin)
+  @Roles(UserRole.platform_admin)
   findAll() {
     return this.companies.findAll();
   }
 
   @Get('current')
-  @Roles(UserRole.employee, UserRole.hr_admin, UserRole.super_admin)
+  @Roles(UserRole.employee, UserRole.org_admin, UserRole.platform_admin)
   current(@CurrentUser() user: RequestUser) {
     return this.companies.current(user);
   }
 
   @Post()
-  @Roles(UserRole.super_admin)
+  @Roles(UserRole.platform_admin)
   create(@Body() dto: CreateCompanyDto) {
     return this.companies.create(dto);
   }
 
   @Patch(':id')
-  @Roles(UserRole.super_admin)
+  @Roles(UserRole.platform_admin)
   update(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
     return this.companies.update(id, dto);
   }

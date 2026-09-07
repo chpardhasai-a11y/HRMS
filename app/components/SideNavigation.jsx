@@ -6,6 +6,7 @@ import {
   UserRound
 } from 'lucide-react';
 import { useState } from 'react';
+import LogoutButton from './LogoutButton';
 
 export default function SideNavigation({ activePath = '/' }) {
   const [collapsed, setCollapsed] = useState(true);
@@ -33,6 +34,9 @@ export default function SideNavigation({ activePath = '/' }) {
           <span>Profile</span>
         </a>
       </nav>
+      <div className="sidenav-footer">
+        <LogoutButton collapsed={collapsed} />
+      </div>
     </aside>
   );
 }

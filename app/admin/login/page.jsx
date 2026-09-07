@@ -1,5 +1,5 @@
-import { AuthLogin } from '../../components/AuthForms';
+import { redirect } from 'next/navigation';
 
-export default function AdminLoginPage() {
-  return <AuthLogin audience="admin" title="Admin Login" forgotHref="/admin/forgot-password" />;
+export default function AdminLoginRedirectPage() {
+  redirect('/org-admin/login');
 }

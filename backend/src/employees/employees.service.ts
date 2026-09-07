@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EmployeeStatus, Prisma, UserRole } from '@prisma/client';
 import { RequestUser } from '../common/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,7 +23,7 @@ export class EmployeesService {
   }
 
   private companyId(user: RequestUser) {
-    return user.activeCompanyId || user.companyId;
+    return user.companyId;
   }
 
   async findAll(user: RequestUser, query: { search?: string; status?: string; department?: string; location?: string; type?: string }) {
@@ -63,28 +63,36 @@ export class EmployeesService {
   }
 
   async create(dto: CreateEmployeeDto, actor: RequestUser) {
-    const employee = await this.prisma.employee.create({
-      data: {
-        ...dto,
-        companyId: this.companyId(actor),
-        joinDate: new Date(dto.joinDate),
-        profile: { create: { companyId: this.companyId(actor) } }
-      },
-      include: this.includeProfile()
-    });
-    await this.audit(employee.code, actor, 'employee.created', null, employee);
-    return employee;
+    try {
+      const employee = await this.prisma.employee.create({
+        data: {
+          ...dto,
+          companyId: this.companyId(actor),
+          joinDate: new Date(dto.joinDate),
+          profile: { create: { companyId: this.companyId(actor) } }
+        },
+        include: this.includeProfile()
+      });
+      await this.audit(employee.code, actor, 'employee.created', null, employee);
+      return employee;
+    } catch (error) {
+      this.handleEmployeeConflict(error);
+    }
   }
 
   async update(code: string, dto: UpdateEmployeeDto, actor: RequestUser) {
     const before = await this.findByCode(code, actor);
-    const employee = await this.prisma.employee.update({
-      where: { code },
-      data: dto,
-      include: this.includeProfile()
-    });
-    await this.audit(code, actor, 'employee.updated', before, employee);
-    return employee;
+    try {
+      const employee = await this.prisma.employee.update({
+        where: { code },
+        data: dto,
+        include: this.includeProfile()
+      });
+      await this.audit(code, actor, 'employee.updated', before, employee);
+      return employee;
+    } catch (error) {
+      this.handleEmployeeConflict(error);
+    }
   }
 
   async updateStatus(code: string, dto: UpdateStatusDto, actor: RequestUser) {
@@ -173,6 +181,16 @@ export class EmployeesService {
   private toJson(value: unknown) {
     if (value === null || value === undefined) return Prisma.JsonNull;
     return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+  }
+
+  private handleEmployeeConflict(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : String(error.meta?.target || 'field');
+      if (target.includes('code')) throw new ConflictException('Employee code already exists.');
+      if (target.includes('email')) throw new ConflictException('Employee email already exists.');
+      throw new ConflictException('Employee already exists.');
+    }
+    throw error;
   }
 
   private assertCanReadEmployee(code: string, user: RequestUser) {

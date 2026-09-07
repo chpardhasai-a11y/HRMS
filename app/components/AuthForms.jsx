@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { KeyRound, LogIn, Mail } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, LogIn, Mail } from 'lucide-react';
 import { forgotPassword, loginUser, resetPassword } from '../lib/hrmsApi';
 
 const authStyles = `
@@ -64,6 +64,42 @@ const authStyles = `
     font: inherit;
   }
 
+  .auth-password-field {
+    position: relative;
+    display: grid;
+    align-items: center;
+  }
+
+  .auth-password-field input {
+    padding-right: 44px;
+  }
+
+  .auth-password-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-neutral-500);
+    cursor: pointer;
+  }
+
+  .auth-password-toggle:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-800);
+  }
+
+  .auth-password-toggle:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
   .auth-error {
     border: 1px solid #fecaca;
     border-radius: 6px;
@@ -82,20 +118,27 @@ const authStyles = `
 `;
 
 export function AuthLogin({ audience, title, forgotHref }) {
-  const [email, setEmail] = useState(audience === 'admin' ? 'admin@nw18.com' : 'rahul.sharma@nw18.com');
+  const defaultEmail = {
+    platform: 'admin@nw18.com',
+    org: 'hr@nw18.com',
+    admin: 'hr@nw18.com',
+    employee: 'rahul.sharma@nw18.com'
+  }[audience] || 'rahul.sharma@nw18.com';
+  const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState('Password@123');
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
 
   async function submit(event) {
     event.preventDefault();
     try {
       const data = await loginUser(email, password);
-      if (data.user.role === 'super_admin') {
-        window.location.href = '/admin/companies';
+      if (data.user.role === 'platform_admin') {
+        window.location.href = '/platform-admin';
         return;
       }
-      if (data.user.role === 'hr_admin') {
-        window.location.href = '/admin';
+      if (data.user.role === 'org_admin') {
+        window.location.href = '/org-admin';
         return;
       }
       window.location.href = '/';
@@ -120,7 +163,18 @@ export function AuthLogin({ audience, title, forgotHref }) {
         </label>
         <label>
           <span>Password</span>
-          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          <div className="auth-password-field">
+            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} />
+            <button
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="auth-password-toggle"
+              onClick={() => setShowPassword((value) => !value)}
+              title={showPassword ? 'Hide password' : 'Show password'}
+              type="button"
+            >
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
         </label>
         {message && <div className="auth-error">{message}</div>}
         <button className="btn btn-primary" type="submit">Login</button>
@@ -170,6 +224,8 @@ export function ResetPasswordForm({ loginHref }) {
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isComplete, setIsComplete] = useState(false);
 
@@ -204,11 +260,33 @@ export function ResetPasswordForm({ loginHref }) {
         </div>
         <label>
           <span>New Password</span>
-          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <div className="auth-password-field">
+            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} required />
+            <button
+              aria-label={showPassword ? 'Hide new password' : 'Show new password'}
+              className="auth-password-toggle"
+              onClick={() => setShowPassword((value) => !value)}
+              title={showPassword ? 'Hide new password' : 'Show new password'}
+              type="button"
+            >
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
         </label>
         <label>
           <span>Confirm Password</span>
-          <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+          <div className="auth-password-field">
+            <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+            <button
+              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              className="auth-password-toggle"
+              onClick={() => setShowConfirmPassword((value) => !value)}
+              title={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              type="button"
+            >
+              {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
         </label>
         {message && <div className="auth-error">{message}</div>}
         {!isComplete && <button className="btn btn-primary" type="submit">Reset Password</button>}

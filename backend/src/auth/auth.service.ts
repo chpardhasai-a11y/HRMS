@@ -51,7 +51,7 @@ export class AuthService {
     };
   }
 
-  async forgotPassword(email: string, audience: 'employee' | 'admin' = 'employee') {
+  async forgotPassword(email: string, audience: 'employee' | 'admin' | 'platform' | 'org' = 'employee') {
     const user = await this.users.findByEmail(email.toLowerCase());
     if (!user || !user.isActive) return { message: this.forgotPasswordMessage };
 
@@ -75,7 +75,12 @@ export class AuthService {
 
     await this.securityAudit(user.companyId, user.id, 'password_reset_requested', { audience });
 
-    const resetPath = audience === 'admin' ? '/admin/reset-password' : '/reset-password';
+    const resetPath = {
+      employee: '/reset-password',
+      admin: '/org-admin/reset-password',
+      org: '/org-admin/reset-password',
+      platform: '/platform-admin/reset-password'
+    }[audience];
     const resetUrl = `${this.frontendUrl()}${resetPath}?token=${token}`;
     this.logger.log(`Password reset link for ${user.email}: ${resetUrl}`);
 

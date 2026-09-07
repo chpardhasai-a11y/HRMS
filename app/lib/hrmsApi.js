@@ -3,6 +3,10 @@ const TOKEN_KEY = 'hrms_token';
 const USER_KEY = 'hrms_user';
 const COMPANY_KEY = 'hrms_active_company_id';
 
+function storage() {
+  return typeof window === 'undefined' ? null : window.localStorage;
+}
+
 export function statusLabel(status) {
   return status === 'OnLeave' ? 'On Leave' : status;
 }
@@ -21,36 +25,42 @@ export function formatDate(value) {
 }
 
 export async function loginUser(email, password) {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await request(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   });
-  if (!response.ok) throw new Error('Invalid email or password');
-  const data = await response.json();
-  localStorage.setItem(TOKEN_KEY, data.accessToken);
-  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-  localStorage.setItem(COMPANY_KEY, data.user.companyId);
+  if (!response.ok) throw new Error(await responseMessage(response, 'Invalid email or password'));
+  const data = await parseJson(response, {});
+  storage()?.setItem(TOKEN_KEY, data.accessToken);
+  storage()?.setItem(USER_KEY, JSON.stringify(data.user));
+  storage()?.setItem(COMPANY_KEY, data.user.companyId);
   return data;
 }
 
 export function logoutUser() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(COMPANY_KEY);
+  storage()?.removeItem(TOKEN_KEY);
+  storage()?.removeItem(USER_KEY);
+  storage()?.removeItem(COMPANY_KEY);
 }
 
 export function getStoredUser() {
-  const value = localStorage.getItem(USER_KEY);
-  return value ? JSON.parse(value) : null;
+  const value = storage()?.getItem(USER_KEY);
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    logoutUser();
+    return null;
+  }
 }
 
 export function hasSession() {
-  return Boolean(localStorage.getItem(TOKEN_KEY));
+  return Boolean(storage()?.getItem(TOKEN_KEY));
 }
 
 async function token() {
-  const existing = localStorage.getItem(TOKEN_KEY);
+  const existing = storage()?.getItem(TOKEN_KEY);
   if (!existing) {
     redirectToLogin();
     throw new Error('Please login to continue.');
@@ -60,44 +70,48 @@ async function token() {
 
 export async function apiRequest(path, options = {}) {
   const accessToken = await token();
-  const activeCompanyId = localStorage.getItem(COMPANY_KEY);
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await request(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
-      ...(activeCompanyId ? { 'X-Company-Id': activeCompanyId } : {}),
       ...(options.headers || {})
     }
   });
 
   if (response.status === 401) {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    storage()?.removeItem(TOKEN_KEY);
+    storage()?.removeItem(USER_KEY);
     redirectToLogin();
     throw new Error('Your session expired. Please login again.');
   }
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `HRMS API request failed: ${response.status}`);
+    throw new Error(await responseMessage(response, `HRMS API request failed: ${response.status}`));
   }
 
   if (response.status === 204) return null;
-  return response.json();
+  return parseJson(response, null);
 }
 
-export function getEmployees() {
-  return apiRequest('/employees');
+export function getEmployees(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const query = params.toString();
+  return apiRequest(`/employees${query ? `?${query}` : ''}`);
 }
 
 export function getActiveCompanyId() {
-  return localStorage.getItem(COMPANY_KEY);
+  return storage()?.getItem(COMPANY_KEY) || null;
 }
 
 export function setActiveCompanyId(companyId) {
-  localStorage.setItem(COMPANY_KEY, companyId);
-  window.dispatchEvent(new CustomEvent('hrms-company-change', { detail: { companyId } }));
+  storage()?.setItem(COMPANY_KEY, companyId);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('hrms-company-change', { detail: { companyId } }));
+  }
 }
 
 export function getCompanies() {
@@ -106,6 +120,14 @@ export function getCompanies() {
 
 export function getCurrentCompany() {
   return apiRequest('/companies/current');
+}
+
+export function getPlatformHealth() {
+  return request(`${API_BASE_URL}/health`).then(async (response) => {
+    const data = await parseJson(response, {});
+    if (!response.ok) throw new Error(data.message || 'Unable to load platform health.');
+    return data;
+  });
 }
 
 export function createCompany(payload) {
@@ -117,6 +139,13 @@ export function createCompany(payload) {
 
 export function getEmployee(code) {
   return apiRequest(`/employees/${code}`);
+}
+
+export function createEmployee(payload) {
+  return apiRequest('/employees', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
 }
 
 export function updateEmployee(code, updates) {
@@ -159,32 +188,69 @@ export function getEmployeeAudit(code) {
 }
 
 export function forgotPassword(email, audience = 'employee') {
-  return fetch(`${API_BASE_URL}/auth/forgot-password`, {
+  return request(`${API_BASE_URL}/auth/forgot-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, audience })
   }).then(async (response) => {
-    const data = await response.json();
+    const data = await parseJson(response, {});
     if (!response.ok) throw new Error(data.message || 'Unable to request password reset.');
     return data;
   });
 }
 
 export function resetPassword(tokenValue, password) {
-  return fetch(`${API_BASE_URL}/auth/reset-password`, {
+  return request(`${API_BASE_URL}/auth/reset-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: tokenValue, password })
   }).then(async (response) => {
-    const data = await response.json();
+    const data = await parseJson(response, {});
     if (!response.ok) throw new Error(data.message || 'Unable to reset password.');
     return data;
   });
+}
+
+async function request(url, options) {
+  try {
+    return await fetch(url, options);
+  } catch {
+    throw new Error('Unable to reach the HRMS server. Please check that the backend is running.');
+  }
+}
+
+async function parseJson(response, fallback) {
+  const body = await response.text();
+  if (!body) return fallback;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return fallback;
+  }
+}
+
+async function responseMessage(response, fallback) {
+  const body = await response.text();
+  if (!body) return fallback;
+  try {
+    const data = JSON.parse(body);
+    return Array.isArray(data.message) ? data.message.join(', ') : data.message || fallback;
+  } catch {
+    return body || fallback;
+  }
 }
 
 function redirectToLogin() {
   if (typeof window === 'undefined') return;
   const path = window.location.pathname;
   if (path.includes('login') || path.includes('password')) return;
-  window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
+  if (path.startsWith('/platform-admin')) {
+    window.location.href = '/platform-admin/login';
+    return;
+  }
+  if (path.startsWith('/org-admin') || path.startsWith('/admin')) {
+    window.location.href = '/org-admin/login';
+    return;
+  }
+  window.location.href = '/login';
 }

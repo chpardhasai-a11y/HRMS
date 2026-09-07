@@ -117,13 +117,13 @@ async function main() {
   const passwordHash = await bcrypt.hash('Password@123', 10);
   await prisma.user.upsert({
     where: { email: 'admin@nw18.com' },
-    update: { companyId: company.id, passwordHash, role: UserRole.super_admin },
-    create: { companyId: company.id, email: 'admin@nw18.com', passwordHash, role: UserRole.super_admin }
+    update: { companyId: company.id, passwordHash, role: UserRole.platform_admin },
+    create: { companyId: company.id, email: 'admin@nw18.com', passwordHash, role: UserRole.platform_admin }
   });
   await prisma.user.upsert({
     where: { email: 'hr@nw18.com' },
-    update: { companyId: company.id, passwordHash, role: UserRole.hr_admin },
-    create: { companyId: company.id, email: 'hr@nw18.com', passwordHash, role: UserRole.hr_admin, employeeCode: 'EMP000744' }
+    update: { companyId: company.id, passwordHash, role: UserRole.org_admin },
+    create: { companyId: company.id, email: 'hr@nw18.com', passwordHash, role: UserRole.org_admin, employeeCode: 'EMP000744' }
   });
   await prisma.user.upsert({
     where: { email: 'rahul.sharma@nw18.com' },
