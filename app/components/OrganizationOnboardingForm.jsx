@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Building2, Check } from 'lucide-react';
+import DropdownSelect from './DropdownSelect';
 import { createCompany } from '../lib/hrmsApi';
 
 const moduleOptions = ['Core HR', 'Leave Management', 'Attendance', 'Payroll', 'Recruitment', 'Onboarding', 'Performance Management', 'Documents'];
@@ -346,7 +347,7 @@ export default function OrganizationOnboardingForm({ onCreated }) {
           grid-column: 1 / -1;
         }
 
-        .tenant-field span,
+        .tenant-field > span,
         .tenant-small-label {
           color: var(--color-neutral-700);
           font-size: 12px;
@@ -758,11 +759,13 @@ function SelectField({ label, value, onChange, onBlur, required = false, error =
   return (
     <label className="tenant-field">
       <span>{label}{required ? ' *' : ''}</span>
-      <select value={value} onBlur={onBlur} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option value={option} key={option || 'blank'}>{option || 'Select'}</option>
-        ))}
-      </select>
+      <DropdownSelect
+        ariaLabel={label}
+        value={value}
+        onBlur={onBlur}
+        onChange={onChange}
+        options={options.map((option) => ({ value: option, label: option || 'Select' }))}
+      />
       <small className="tenant-error">{error || ''}</small>
     </label>
   );

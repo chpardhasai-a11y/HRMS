@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import AdminRouteGuard from '../components/AdminRouteGuard';
 import Breadcrumbs from '../components/Breadcrumbs';
+import DropdownSelect from '../components/DropdownSelect';
 import OrgAdminSideNavigation from '../components/OrgAdminSideNavigation';
 import {
   createEmployee,
@@ -543,7 +544,6 @@ export default function AdminPage() {
         }
 
         .admin-search,
-        .admin-select,
         .form-field {
           display: flex;
           align-items: center;
@@ -564,22 +564,38 @@ export default function AdminPage() {
           padding: 8px 10px;
         }
 
-        .form-field span {
+        .form-field > span {
           color: var(--admin-muted);
           font-size: 12px;
           font-weight: 800;
         }
 
         .admin-search input,
-        .admin-select select,
-        .form-field input,
-        .form-field select {
+        .form-field input {
           min-width: 0;
           width: 100%;
           border: 0;
           background: transparent;
           color: #374151;
           outline: 0;
+        }
+
+        .admin-select {
+          min-width: 0;
+        }
+
+        .form-field .dropdown-select-trigger {
+          min-height: 36px;
+          border: 0;
+          background: transparent;
+          padding: 0;
+        }
+
+        .form-field .dropdown-select-trigger:hover,
+        .form-field .dropdown-select-trigger:focus,
+        .form-field .dropdown-select-trigger[aria-expanded="true"] {
+          background: transparent;
+          box-shadow: none;
         }
 
         .icon-btn {
@@ -741,8 +757,10 @@ export default function AdminPage() {
           position: fixed;
           inset: 0;
           z-index: 50;
+          display: grid;
+          place-items: center;
           background: rgba(17, 24, 39, 0.42);
-          padding: 0;
+          padding: 20px;
         }
 
         .modal-panel {
@@ -891,6 +909,16 @@ export default function AdminPage() {
             left: auto !important;
             width: min(240px, calc(100vw - 24px));
           }
+
+          .modal-backdrop {
+            align-items: stretch;
+            padding: 12px;
+          }
+
+          .modal-panel {
+            width: 100%;
+            max-height: calc(100vh - 24px);
+          }
         }
       `}</style>
       <OrgAdminSideNavigation activePath="/org-admin" />
@@ -936,30 +964,41 @@ export default function AdminPage() {
                 <Search size={16} />
                 <input value={filters.search} onChange={(event) => handleFilterChange('search', event.target.value)} placeholder="Search by name, code, role or manager" />
               </label>
-              <label className="admin-select">
-                <select aria-label="Status" value={filters.status} onChange={(event) => handleFilterChange('status', event.target.value)}>
-                  <option value="">Status</option>
-                  {statusOptions.map((status) => <option value={status === 'On Leave' ? 'OnLeave' : status} key={status}>{status}</option>)}
-                </select>
-              </label>
-              <label className="admin-select">
-                <select aria-label="Department" value={filters.department} onChange={(event) => handleFilterChange('department', event.target.value)}>
-                  <option value="">Department</option>
-                  {departmentOptions.map((department) => <option key={department}>{department}</option>)}
-                </select>
-              </label>
-              <label className="admin-select">
-                <select aria-label="Location" value={filters.location} onChange={(event) => handleFilterChange('location', event.target.value)}>
-                  <option value="">Location</option>
-                  {locationOptions.map((location) => <option key={location}>{location}</option>)}
-                </select>
-              </label>
-              <label className="admin-select">
-                <select aria-label="Employee type" value={filters.type} onChange={(event) => handleFilterChange('type', event.target.value)}>
-                  <option value="">Type</option>
-                  {typeOptions.map((type) => <option key={type}>{type}</option>)}
-                </select>
-              </label>
+              <DropdownSelect
+                ariaLabel="Status"
+                className="admin-select"
+                value={filters.status}
+                placeholder="Status"
+                options={[
+                  { value: '', label: 'Status' },
+                  ...statusOptions.map((status) => ({ value: status === 'On Leave' ? 'OnLeave' : status, label: status }))
+                ]}
+                onChange={(value) => handleFilterChange('status', value)}
+              />
+              <DropdownSelect
+                ariaLabel="Department"
+                className="admin-select"
+                value={filters.department}
+                placeholder="Department"
+                options={[{ value: '', label: 'Department' }, ...departmentOptions]}
+                onChange={(value) => handleFilterChange('department', value)}
+              />
+              <DropdownSelect
+                ariaLabel="Location"
+                className="admin-select"
+                value={filters.location}
+                placeholder="Location"
+                options={[{ value: '', label: 'Location' }, ...locationOptions]}
+                onChange={(value) => handleFilterChange('location', value)}
+              />
+              <DropdownSelect
+                ariaLabel="Employee type"
+                className="admin-select"
+                value={filters.type}
+                placeholder="Type"
+                options={[{ value: '', label: 'Type' }, ...typeOptions]}
+                onChange={(value) => handleFilterChange('type', value)}
+              />
               <button className="icon-btn" type="button" aria-label="Clear filters" title="Clear filters" onClick={clearFilters}><Filter size={16} /></button>
             </div>
 
@@ -1087,9 +1126,7 @@ function SelectField({ label, value = '', options, onChange }) {
   return (
     <label className="form-field">
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => <option key={option}>{option}</option>)}
-      </select>
+      <DropdownSelect value={value} options={options} onChange={onChange} ariaLabel={label} />
     </label>
   );
 }

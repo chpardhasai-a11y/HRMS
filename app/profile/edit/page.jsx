@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   UserRound
 } from 'lucide-react';
+import DropdownSelect from '../../components/DropdownSelect';
 import SideNavigation from '../../components/SideNavigation';
 import { getEmployee, updateEmployee } from '../../lib/hrmsApi';
 
@@ -48,19 +49,7 @@ function TextInput({ value, placeholder, type = 'text', onChange }) {
 }
 
 function SelectInput({ value, options, onChange }) {
-  if (!onChange) {
-    return (
-      <select defaultValue={value || ''}>
-        {options.map((option) => <option key={option}>{option}</option>)}
-      </select>
-    );
-  }
-
-  return (
-    <select value={value || ''} onChange={(event) => onChange(event.target.value)}>
-      {options.map((option) => <option key={option}>{option}</option>)}
-    </select>
-  );
+  return <DropdownSelect value={value || ''} options={options} onChange={onChange} />;
 }
 
 function FormSection({ id, icon: Icon, title, helper, children }) {
