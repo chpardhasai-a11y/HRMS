@@ -3,9 +3,12 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  CreditCard,
+  Database,
   FileCheck2,
   FileText,
   GitBranch,
+  MapPin,
   Network,
   Settings2,
   ShieldCheck,
@@ -23,6 +26,18 @@ const orgAdminGroups = [
       { label: 'Employee Master', href: '/org-admin#employees', icon: UserRound },
       { label: 'Lifecycle Changes', href: '/org-admin#lifecycle', icon: GitBranch },
       { label: 'Bulk Upload & Import', href: '/org-admin#bulk', icon: Upload }
+    ]
+  },
+  {
+    label: 'Master Catalog',
+    icon: Database,
+    items: [
+      { label: 'Legal Entities', href: '/org-admin/masters/legal-entities', icon: Building2 },
+      { label: 'Business Units', href: '/org-admin/masters/business-units', icon: Network },
+      { label: 'Departments', href: '/org-admin/masters/departments', icon: Network },
+      { label: 'Teams', href: '/org-admin/masters/teams', icon: UsersRound },
+      { label: 'Office Locations', href: '/org-admin/masters/locations', icon: MapPin },
+      { label: 'Cost Centers', href: '/org-admin/masters/cost-centers', icon: CreditCard }
     ]
   },
   {
@@ -53,6 +68,7 @@ const orgAdminGroups = [
     ]
   }
 ];
+
 
 export default function OrgAdminSideNavigation({ activePath = '/org-admin' }) {
   return (

@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Building2, Check } from 'lucide-react';
 import DropdownSelect from './DropdownSelect';
-import { createCompany } from '../lib/hrmsApi';
+import { createCompany, getCountries, getCurrencies, getIndustries, getTimeZones } from '../lib/hrmsApi';
 
 const moduleOptions = ['Core HR', 'Leave Management', 'Attendance', 'Payroll', 'Recruitment', 'Onboarding', 'Performance Management', 'Documents'];
 const steps = [
@@ -104,6 +104,64 @@ export default function OrganizationOnboardingForm({ onCreated }) {
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [industryOptions, setIndustryOptions] = useState([
+    { value: '', label: 'Select Industry' }
+  ]);
+  const [countryOptions, setCountryOptions] = useState([
+    { value: 'India', label: 'India' },
+    { value: 'United States', label: 'United States' },
+    { value: 'United Kingdom', label: 'United Kingdom' }
+  ]);
+  const [currencyOptions, setCurrencyOptions] = useState([
+    { value: 'INR', label: 'INR (₹)' },
+    { value: 'USD', label: 'USD ($)' },
+    { value: 'EUR', label: 'EUR (€)' }
+  ]);
+  const [timeZoneOptions, setTimeZoneOptions] = useState([
+    { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST +05:30)' },
+    { value: 'UTC', label: 'UTC (+00:00)' },
+    { value: 'America/New_York', label: 'America/New_York (EST -05:00)' }
+  ]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.allSettled([
+      getIndustries(),
+      getCountries(),
+      getCurrencies(),
+      getTimeZones()
+    ]).then(([indRes, countRes, curRes, tzRes]) => {
+      if (!isMounted) return;
+
+      if (indRes.status === 'fulfilled' && Array.isArray(indRes.value) && indRes.value.length > 0) {
+        setIndustryOptions([
+          { value: '', label: 'Select Industry' },
+          ...indRes.value.map((item) => ({ value: item.name, label: item.name }))
+        ]);
+      }
+
+      if (countRes.status === 'fulfilled' && Array.isArray(countRes.value) && countRes.value.length > 0) {
+        setCountryOptions(
+          countRes.value.map((item) => ({ value: item.name, label: item.name }))
+        );
+      }
+
+      if (curRes.status === 'fulfilled' && Array.isArray(curRes.value) && curRes.value.length > 0) {
+        setCurrencyOptions(
+          curRes.value.map((item) => ({ value: item.code, label: `${item.code} (${item.symbol}) - ${item.name}` }))
+        );
+      }
+
+      if (tzRes.status === 'fulfilled' && Array.isArray(tzRes.value) && tzRes.value.length > 0) {
+        setTimeZoneOptions(
+          tzRes.value.map((item) => ({ value: item.name, label: `${item.name} (${item.code} ${item.offset})` }))
+        );
+      }
+    });
+
+    return () => { isMounted = false; };
+  }, []);
 
   const requiredErrors = useMemo(() => ({
     name: fieldError(formState, 'name'),
@@ -587,12 +645,12 @@ export default function OrganizationOnboardingForm({ onCreated }) {
                 <Field required label="Organization Name" value={formState.name} error={touched.name && requiredErrors.name} onBlur={() => setTouched((current) => ({ ...current, name: true }))} onChange={(value) => updateField('name', value)} />
                 <Field required label="Organization Code" value={formState.code} error={touched.code && requiredErrors.code} onBlur={() => setTouched((current) => ({ ...current, code: true }))} onChange={(value) => updateField('code', codeFromName(value))} />
                 <Field label="Legal Company Name" value={formState.legalName} onChange={(value) => updateField('legalName', value)} />
-                <SelectField label="Industry" value={formState.industry} onChange={(value) => updateField('industry', value)} options={['', 'Media', 'Technology', 'Financial Services', 'Manufacturing', 'Retail', 'Healthcare']} />
+                <SelectField label="Industry" value={formState.industry} onChange={(value) => updateField('industry', value)} options={industryOptions} />
                 <SelectField label="Company Size" value={formState.companySize} onChange={(value) => updateField('companySize', value)} options={['', '1-50', '51-200', '201-500', '501-1000', '1000+']} />
                 <Field label="Domain" value={formState.domain} onChange={(value) => updateField('domain', value)} placeholder="example.com" />
-                <Field required label="Country" value={formState.country} error={touched.country && requiredErrors.country} onBlur={() => setTouched((current) => ({ ...current, country: true }))} onChange={(value) => updateField('country', value)} />
-                <Field required label="Time Zone" value={formState.timezone} error={touched.timezone && requiredErrors.timezone} onBlur={() => setTouched((current) => ({ ...current, timezone: true }))} onChange={(value) => updateField('timezone', value)} />
-                <SelectField required label="Default Currency" value={formState.currency} error={touched.currency && requiredErrors.currency} onBlur={() => setTouched((current) => ({ ...current, currency: true }))} onChange={(value) => updateField('currency', value)} options={['INR', 'USD', 'EUR', 'GBP', 'AED']} />
+                <SelectField required label="Country" value={formState.country} error={touched.country && requiredErrors.country} onBlur={() => setTouched((current) => ({ ...current, country: true }))} onChange={(value) => updateField('country', value)} options={countryOptions} />
+                <SelectField required label="Time Zone" value={formState.timezone} error={touched.timezone && requiredErrors.timezone} onBlur={() => setTouched((current) => ({ ...current, timezone: true }))} onChange={(value) => updateField('timezone', value)} options={timeZoneOptions} />
+                <SelectField required label="Default Currency" value={formState.currency} error={touched.currency && requiredErrors.currency} onBlur={() => setTouched((current) => ({ ...current, currency: true }))} onChange={(value) => updateField('currency', value)} options={currencyOptions} />
                 <SelectField label="Date Format" value={formState.dateFormat} onChange={(value) => updateField('dateFormat', value)} options={['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']} />
                 <Field className="full" label="Organization Logo" value={formState.logoUrl} onChange={(value) => updateField('logoUrl', value)} placeholder="Logo URL" />
               </div>
@@ -756,6 +814,11 @@ function Field({ label, value, onChange, onBlur, placeholder = '', type = 'text'
 }
 
 function SelectField({ label, value, onChange, onBlur, required = false, error = '', options = [] }) {
+  const normalizedOptions = options.map((option) => {
+    if (typeof option === 'object' && option !== null) return option;
+    return { value: option, label: option || 'Select' };
+  });
+
   return (
     <label className="tenant-field">
       <span>{label}{required ? ' *' : ''}</span>
@@ -764,7 +827,7 @@ function SelectField({ label, value, onChange, onBlur, required = false, error =
         value={value}
         onBlur={onBlur}
         onChange={onChange}
-        options={options.map((option) => ({ value: option, label: option || 'Select' }))}
+        options={normalizedOptions}
       />
       <small className="tenant-error">{error || ''}</small>
     </label>

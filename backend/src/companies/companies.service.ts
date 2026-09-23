@@ -27,6 +27,33 @@ export class CompaniesService {
     return company;
   }
 
+  async findOne(id: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+      include: { _count: { select: { employees: true, users: true } } }
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
+  async findBySlug(slug: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { slug: slug.toLowerCase() },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        domain: true,
+        logoUrl: true,
+        timezone: true,
+        country: true,
+        isActive: true
+      }
+    });
+    if (!company || !company.isActive) throw new NotFoundException('Organization not found');
+    return company;
+  }
+
   async create(dto: CreateCompanyDto) {
     const passwordHash = await bcrypt.hash(dto.orgAdminPassword, 10);
     const adminEmployeeCode = this.adminEmployeeCode(dto.slug);
@@ -36,7 +63,7 @@ export class CompaniesService {
         const company = await tx.company.create({
           data: {
             name: dto.name,
-            slug: dto.slug,
+            slug: dto.slug.toLowerCase(),
             domain: dto.domain,
             country: dto.country || 'India',
             timezone: dto.timezone || 'Asia/Kolkata',
@@ -63,7 +90,7 @@ export class CompaniesService {
             type: 'Permanent',
             grade: 'Admin',
             joinDate: new Date(),
-            profile: { create: { companyId: company.id } }
+            profile: { create: {} }
           }
         });
 
@@ -99,6 +126,20 @@ export class CompaniesService {
   async update(id: string, dto: UpdateCompanyDto) {
     await this.ensureCompany(id);
     return this.prisma.company.update({ where: { id }, data: dto });
+  }
+
+  async delete(id: string) {
+    await this.ensureCompany(id);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.auditLog.deleteMany({ where: { companyId: id } });
+      await tx.securityAuditLog.deleteMany({ where: { companyId: id } });
+      await tx.passwordResetToken.deleteMany({ where: { companyId: id } });
+      await tx.employeeDocument.deleteMany({ where: { companyId: id } });
+      await tx.employeeProfile.deleteMany({ where: { companyId: id } });
+      await tx.user.deleteMany({ where: { companyId: id } });
+      await tx.employee.deleteMany({ where: { companyId: id } });
+      return tx.company.delete({ where: { id } });
+    });
   }
 
   private async ensureCompany(id: string) {

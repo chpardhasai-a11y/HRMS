@@ -19,8 +19,18 @@ export class AuthService {
     private readonly prisma: PrismaService
   ) {}
 
-  async login(email: string, password: string) {
-    const user = await this.users.findByEmail(email.toLowerCase());
+  async login(email: string, password: string, companyIdOrSlug?: string) {
+    let companyId: string | undefined = undefined;
+    if (companyIdOrSlug) {
+      const company = await this.prisma.company.findFirst({
+        where: {
+          OR: [{ id: companyIdOrSlug }, { slug: companyIdOrSlug }]
+        }
+      });
+      if (company) companyId = company.id;
+    }
+
+    const user = await this.users.findByEmail(email, companyId);
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid email or password');
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);

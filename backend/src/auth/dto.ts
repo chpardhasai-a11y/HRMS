@@ -7,6 +7,14 @@ export class LoginDto {
   @IsString()
   @MinLength(6)
   password!: string;
+
+  @IsOptional()
+  @IsString()
+  companyId?: string;
+
+  @IsOptional()
+  @IsString()
+  companySlug?: string;
 }
 
 export class ForgotPasswordDto {

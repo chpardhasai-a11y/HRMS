@@ -53,10 +53,15 @@ export class EmployeesService {
   async findByCode(code: string, user: RequestUser) {
     this.assertCanReadEmployee(code, user);
     const employee = await this.prisma.employee.findUnique({
-      where: { code },
+      where: {
+        companyId_code: {
+          companyId: this.companyId(user),
+          code
+        }
+      },
       include: this.includeProfile()
     });
-    if (!employee || employee.companyId !== this.companyId(user)) {
+    if (!employee) {
       throw new NotFoundException(`Employee ${code} not found`);
     }
     return employee;
@@ -69,7 +74,7 @@ export class EmployeesService {
           ...dto,
           companyId: this.companyId(actor),
           joinDate: new Date(dto.joinDate),
-          profile: { create: { companyId: this.companyId(actor) } }
+          profile: { create: {} }
         },
         include: this.includeProfile()
       });
@@ -84,7 +89,12 @@ export class EmployeesService {
     const before = await this.findByCode(code, actor);
     try {
       const employee = await this.prisma.employee.update({
-        where: { code },
+        where: {
+          companyId_code: {
+            companyId: this.companyId(actor),
+            code
+          }
+        },
         data: dto,
         include: this.includeProfile()
       });
@@ -98,7 +108,12 @@ export class EmployeesService {
   async updateStatus(code: string, dto: UpdateStatusDto, actor: RequestUser) {
     const before = await this.findByCode(code, actor);
     const employee = await this.prisma.employee.update({
-      where: { code },
+      where: {
+        companyId_code: {
+          companyId: this.companyId(actor),
+          code
+        }
+      },
       data: { status: dto.status },
       include: this.includeProfile()
     });
@@ -109,7 +124,12 @@ export class EmployeesService {
   async updateManager(code: string, dto: UpdateManagerDto, actor: RequestUser) {
     const before = await this.findByCode(code, actor);
     const employee = await this.prisma.employee.update({
-      where: { code },
+      where: {
+        companyId_code: {
+          companyId: this.companyId(actor),
+          code
+        }
+      },
       data: { manager: dto.manager },
       include: this.includeProfile()
     });
@@ -120,7 +140,12 @@ export class EmployeesService {
   async transfer(code: string, dto: TransferEmployeeDto, actor: RequestUser) {
     const before = await this.findByCode(code, actor);
     const employee = await this.prisma.employee.update({
-      where: { code },
+      where: {
+        companyId_code: {
+          companyId: this.companyId(actor),
+          code
+        }
+      },
       data: dto,
       include: this.includeProfile()
     });
@@ -138,12 +163,16 @@ export class EmployeesService {
     const before = await this.findByCode(code, actor);
     const note = `${dto.documentType} uploaded${dto.uploadNote ? `: ${dto.uploadNote}` : ''}`;
     const employee = await this.prisma.employee.update({
-      where: { code },
+      where: {
+        companyId_code: {
+          companyId: this.companyId(actor),
+          code
+        }
+      },
       data: {
         documentNote: note,
         documents: {
           create: {
-            companyId: this.companyId(actor),
             type: dto.documentType,
             status: 'Pending',
             note: dto.uploadNote
@@ -186,8 +215,8 @@ export class EmployeesService {
   private handleEmployeeConflict(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       const target = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : String(error.meta?.target || 'field');
-      if (target.includes('code')) throw new ConflictException('Employee code already exists.');
-      if (target.includes('email')) throw new ConflictException('Employee email already exists.');
+      if (target.includes('code')) throw new ConflictException('Employee code already exists in this organization.');
+      if (target.includes('email')) throw new ConflictException('Employee email already exists in this organization.');
       throw new ConflictException('Employee already exists.');
     }
     throw error;

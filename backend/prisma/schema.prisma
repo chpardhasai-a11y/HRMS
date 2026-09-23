@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -38,27 +39,36 @@ model Company {
   profiles       EmployeeProfile[]
   documents      EmployeeDocument[]
   auditLogs      AuditLog[]
+  legalEntities  LegalEntity[]
+  businessUnits  BusinessUnit[]
+  departments    Department[]
+  teams          Team[]
+  locations      Location[]
+  costCenters    CostCenter[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 }
+
 
 model User {
   id           String    @id @default(cuid())
   companyId    String
   company      Company   @relation(fields: [companyId], references: [id])
-  email        String    @unique
+  email        String
   passwordHash String
   role         UserRole  @default(employee)
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   passwordChangedAt DateTime?
   employeeCode String?
-  employee     Employee? @relation(fields: [employeeCode], references: [code])
+  employee     Employee? @relation(fields: [companyId, employeeCode], references: [companyId, code])
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   auditLogs    AuditLog[]
   passwordResetTokens PasswordResetToken[]
   securityAuditLogs SecurityAuditLog[]
+
+  @@unique([companyId, email])
 }
 
 model PasswordResetToken {
@@ -95,9 +105,9 @@ model Employee {
   id               String             @id @default(cuid())
   companyId        String
   company          Company            @relation(fields: [companyId], references: [id])
-  code             String             @unique
+  code             String
   name             String
-  email            String             @unique
+  email            String
   phone            String?
   role             String
   department       String
@@ -115,6 +125,9 @@ model Employee {
   auditLogs        AuditLog[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, email])
 }
 
 model EmployeeProfile {
@@ -122,7 +135,7 @@ model EmployeeProfile {
   companyId           String
   company             Company  @relation(fields: [companyId], references: [id])
   employeeCode        String   @unique
-  employee            Employee @relation(fields: [employeeCode], references: [code], onDelete: Cascade)
+  employee            Employee @relation(fields: [companyId, employeeCode], references: [companyId, code], onDelete: Cascade)
   dateOfBirth         DateTime?
   gender              String?
   maritalStatus       String?
@@ -146,6 +159,8 @@ model EmployeeProfile {
   salaryDetails       Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  @@unique([companyId, employeeCode])
 }
 
 model EmployeeDocument {
@@ -153,7 +168,7 @@ model EmployeeDocument {
   companyId    String
   company      Company  @relation(fields: [companyId], references: [id])
   employeeCode String
-  employee     Employee @relation(fields: [employeeCode], references: [code], onDelete: Cascade)
+  employee     Employee @relation(fields: [companyId, employeeCode], references: [companyId, code], onDelete: Cascade)
   type         String
   status       String
   note         String?
@@ -167,7 +182,7 @@ model AuditLog {
   companyId    String
   company      Company  @relation(fields: [companyId], references: [id])
   employeeCode String
-  employee     Employee @relation(fields: [employeeCode], references: [code], onDelete: Cascade)
+  employee     Employee @relation(fields: [companyId, employeeCode], references: [companyId, code], onDelete: Cascade)
   actorUserId  String?
   actor        User?    @relation(fields: [actorUserId], references: [id])
   action       String
@@ -175,3 +190,178 @@ model AuditLog {
   after        Json?
   createdAt    DateTime @default(now())
 }
+
+model Industry {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  category    String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+}
+
+model Country {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  code3       String?
+  phoneCode   String?
+  region      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([code])
+  @@index([region])
+}
+
+model Currency {
+  id            String   @id @default(cuid())
+  name          String
+  code          String   @unique
+  symbol        String
+  decimalDigits Int      @default(2)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([code])
+  @@index([name])
+}
+
+model TimeZone {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String
+  offset    String
+  region    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([code])
+  @@index([region])
+}
+
+model LegalEntity {
+  id            String         @id @default(cuid())
+  companyId     String
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code          String
+  name          String
+  taxId         String?
+  country       String?
+  address       String?
+  isActive      Boolean        @default(true)
+  businessUnits BusinessUnit[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model BusinessUnit {
+  id            String       @id @default(cuid())
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code          String
+  name          String
+  legalEntityId String?
+  legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: SetNull)
+  description   String?
+  isActive      Boolean      @default(true)
+  departments   Department[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model Department {
+  id             String        @id @default(cuid())
+  companyId      String
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  businessUnitId String?
+  businessUnit   BusinessUnit? @relation(fields: [businessUnitId], references: [id], onDelete: SetNull)
+  description    String?
+  isActive       Boolean       @default(true)
+  teams          Team[]
+  costCenters    CostCenter[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model Team {
+  id           String      @id @default(cuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code         String
+  name         String
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  description  String?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code      String
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  timezone  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model CostCenter {
+  id           String      @id @default(cuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code         String
+  name         String
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  description  String?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+

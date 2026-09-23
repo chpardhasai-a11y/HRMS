@@ -14,7 +14,130 @@ const employees = [
   { code: 'EMP000512', name: 'Nikhil Nair', role: 'Finance Analyst', department: 'Finance', entity: 'TV18 Broadcast', location: 'Delhi NCR', manager: 'Vikram Sethi', status: EmployeeStatus.Inactive, type: 'Contract', grade: 'C3', joinDate: '2019-04-22', phone: '+91 98765 43214', email: 'nikhil.nair@nw18.com' }
 ];
 
+const initialIndustries = [
+  { name: 'Media & Broadcast', code: 'MEDIA_BROADCAST', category: 'Media & Entertainment', description: 'Television, radio, print, digital publishing, and broadcasting networks.' },
+  { name: 'Film & Entertainment', code: 'FILM_ENTERTAINMENT', category: 'Media & Entertainment', description: 'Film production, music streaming, cinema, and live events.' },
+  { name: 'Information Technology & Services', code: 'IT_SERVICES', category: 'Technology', description: 'IT consulting, managed services, system integration, and software development.' },
+  { name: 'Software & SaaS', code: 'SOFTWARE_SAAS', category: 'Technology', description: 'Enterprise software, cloud SaaS platforms, and digital applications.' },
+  { name: 'Cybersecurity', code: 'CYBERSECURITY', category: 'Technology', description: 'Information security, threat detection, network defense, and compliance.' },
+  { name: 'Artificial Intelligence & Data', code: 'AI_DATA', category: 'Technology', description: 'AI, machine learning, big data analytics, and data infrastructure.' },
+  { name: 'Telecommunications', code: 'TELECOM', category: 'Technology', description: 'Mobile wireless networks, fiber infrastructure, and ISP services.' },
+  { name: 'Banking & Financial Services', code: 'BANKING_FINANCE', category: 'Finance & Banking', description: 'Commercial banking, retail banking, wealth management, and credit services.' },
+  { name: 'Fintech & Digital Payments', code: 'FINTECH', category: 'Finance & Banking', description: 'Digital wallets, payment gateways, robo-advisors, and neobanking.' },
+  { name: 'Insurance & Insurtech', code: 'INSURANCE', category: 'Finance & Banking', description: 'Life, health, property & casualty insurance, and risk underwriting.' },
+  { name: 'Investment Banking & Capital Markets', code: 'CAPITAL_MARKETS', category: 'Finance & Banking', description: 'Stock brokerages, private equity, venture capital, and asset management.' },
+  { name: 'Healthcare Services & Hospitals', code: 'HEALTHCARE', category: 'Healthcare & Life Sciences', description: 'Hospitals, clinics, telemedicine, and healthcare provider operations.' },
+  { name: 'Pharmaceuticals & Life Sciences', code: 'PHARMA', category: 'Healthcare & Life Sciences', description: 'Drug discovery, clinical trials, formulation, and pharmacy manufacturing.' },
+  { name: 'Biotechnology & Medical Devices', code: 'BIOTECH_MEDTECH', category: 'Healthcare & Life Sciences', description: 'Genetic engineering, diagnostics, and medical device technology.' },
+  { name: 'Automotive & Mobility', code: 'AUTOMOTIVE', category: 'Manufacturing & Industrial', description: 'Electric vehicles, OEM manufacturing, auto components, and fleet mobility.' },
+  { name: 'Aerospace & Defense', code: 'AEROSPACE_DEFENSE', category: 'Manufacturing & Industrial', description: 'Avionics, defense equipment, space technology, and aircraft engineering.' },
+  { name: 'Electronics & Semiconductor Manufacturing', code: 'SEMICONDUCTORS', category: 'Manufacturing & Industrial', description: 'Semiconductor fabrication, microchips, and hardware manufacturing.' },
+  { name: 'Consumer Goods (FMCG)', code: 'FMCG', category: 'Retail & Consumer', description: 'Packaged foods, beverages, personal care, and household consumer goods.' },
+  { name: 'Retail & E-Commerce', code: 'RETAIL_ECOMMERCE', category: 'Retail & Consumer', description: 'Online marketplaces, retail chains, and direct-to-consumer brands.' },
+  { name: 'Apparel & Fashion', code: 'APPAREL_FASHION', category: 'Retail & Consumer', description: 'Textile manufacturing, fashion apparel, footwear, and luxury goods.' },
+  { name: 'Construction & Real Estate', code: 'REAL_ESTATE', category: 'Real Estate & Infrastructure', description: 'Commercial & residential real estate development, contracting, and property management.' },
+  { name: 'Civil Engineering & Infrastructure', code: 'INFRASTRUCTURE', category: 'Real Estate & Infrastructure', description: 'Highways, smart cities, bridges, and public infrastructure projects.' },
+  { name: 'Higher Education & EdTech', code: 'EDUCATION_EDTECH', category: 'Education & Public Sector', description: 'Universities, colleges, online learning platforms, and skill training.' },
+  { name: 'Government & Public Administration', code: 'GOVERNMENT', category: 'Education & Public Sector', description: 'Public sector undertakings, civic governance, and municipal bodies.' },
+  { name: 'Renewable Energy & CleanTech', code: 'RENEWABLE_ENERGY', category: 'Energy & Utilities', description: 'Solar, wind, hydro energy, EV charging, and clean energy tech.' },
+  { name: 'Oil, Gas & Energy Utilities', code: 'OIL_GAS_UTILITIES', category: 'Energy & Utilities', description: 'Petroleum refining, natural gas distribution, and electric utilities.' },
+  { name: 'Logistics & Supply Chain', code: 'LOGISTICS', category: 'Transport & Logistics', description: 'Freight forwarding, warehousing, 3PL logistics, and cold chain shipping.' },
+  { name: 'Aviation & Maritime', code: 'AVIATION_MARITIME', category: 'Transport & Logistics', description: 'Commercial airlines, cargo shipping, port logistics, and aviation operations.' },
+  { name: 'Hospitality, Travel & Tourism', code: 'HOSPITALITY', category: 'Services', description: 'Hotels, resorts, travel agencies, and leisure services.' },
+  { name: 'Food & Beverage Services', code: 'FOOD_BEVERAGE', category: 'Services', description: 'Restaurant chains, cloud kitchens, and food delivery services.' },
+  { name: 'Management Consulting & Legal Services', code: 'CONSULTING_LEGAL', category: 'Services', description: 'Strategy consulting, legal advisory, tax audit, and corporate compliance.' },
+  { name: 'Agriculture & AgriTech', code: 'AGRICULTURE', category: 'Agriculture & Mining', description: 'Farming, precision agritech, crop protection, and food processing.' },
+  { name: 'Mining & Metals', code: 'MINING_METALS', category: 'Agriculture & Mining', description: 'Metal ore mining, steel production, and mineral extraction.' }
+];
+
+const initialCountries = [
+  { name: 'India', code: 'IN', code3: 'IND', phoneCode: '+91', region: 'Asia' },
+  { name: 'United States', code: 'US', code3: 'USA', phoneCode: '+1', region: 'North America' },
+  { name: 'United Kingdom', code: 'GB', code3: 'GBR', phoneCode: '+44', region: 'Europe' },
+  { name: 'United Arab Emirates', code: 'AE', code3: 'ARE', phoneCode: '+971', region: 'Middle East' },
+  { name: 'Singapore', code: 'SG', code3: 'SGP', phoneCode: '+65', region: 'Asia' },
+  { name: 'Germany', code: 'DE', code3: 'DEU', phoneCode: '+49', region: 'Europe' },
+  { name: 'Australia', code: 'AU', code3: 'AUS', phoneCode: '+61', region: 'Oceania' },
+  { name: 'Canada', code: 'CA', code3: 'CAN', phoneCode: '+1', region: 'North America' },
+  { name: 'Japan', code: 'JP', code3: 'JPN', phoneCode: '+81', region: 'Asia' },
+  { name: 'France', code: 'FR', code3: 'FRA', phoneCode: '+33', region: 'Europe' },
+  { name: 'Netherlands', code: 'NL', code3: 'NLD', phoneCode: '+31', region: 'Europe' },
+  { name: 'Switzerland', code: 'CH', code3: 'CHE', phoneCode: '+41', region: 'Europe' },
+  { name: 'Saudi Arabia', code: 'SA', code3: 'SAU', phoneCode: '+966', region: 'Middle East' },
+  { name: 'Brazil', code: 'BR', code3: 'BRA', phoneCode: '+55', region: 'South America' },
+  { name: 'South Africa', code: 'ZA', code3: 'ZAF', phoneCode: '+27', region: 'Africa' },
+  { name: 'Malaysia', code: 'MY', code3: 'MYS', phoneCode: '+60', region: 'Asia' },
+  { name: 'Philippines', code: 'PH', code3: 'PHL', phoneCode: '+63', region: 'Asia' },
+  { name: 'South Korea', code: 'KR', code3: 'KOR', phoneCode: '+82', region: 'Asia' },
+  { name: 'Indonesia', code: 'ID', code3: 'IDN', phoneCode: '+62', region: 'Asia' },
+  { name: 'Mexico', code: 'MX', code3: 'MEX', phoneCode: '+52', region: 'North America' }
+];
+
+const initialCurrencies = [
+  { name: 'Indian Rupee', code: 'INR', symbol: '₹', decimalDigits: 2 },
+  { name: 'US Dollar', code: 'USD', symbol: '$', decimalDigits: 2 },
+  { name: 'Euro', code: 'EUR', symbol: '€', decimalDigits: 2 },
+  { name: 'British Pound', code: 'GBP', symbol: '£', decimalDigits: 2 },
+  { name: 'UAE Dirham', code: 'AED', symbol: 'AED', decimalDigits: 2 },
+  { name: 'Singapore Dollar', code: 'SGD', symbol: 'S$', decimalDigits: 2 },
+  { name: 'Australian Dollar', code: 'AUD', symbol: 'A$', decimalDigits: 2 },
+  { name: 'Canadian Dollar', code: 'CAD', symbol: 'C$', decimalDigits: 2 },
+  { name: 'Japanese Yen', code: 'JPY', symbol: '¥', decimalDigits: 0 },
+  { name: 'Swiss Franc', code: 'CHF', symbol: 'CHF', decimalDigits: 2 },
+  { name: 'Saudi Riyal', code: 'SAR', symbol: 'SAR', decimalDigits: 2 },
+  { name: 'Malaysian Ringgit', code: 'MYR', symbol: 'RM', decimalDigits: 2 },
+  { name: 'Philippine Peso', code: 'PHP', symbol: '₱', decimalDigits: 2 },
+  { name: 'South Korean Won', code: 'KRW', symbol: '₩', decimalDigits: 0 },
+  { name: 'Brazilian Real', code: 'BRL', symbol: 'R$', decimalDigits: 2 },
+  { name: 'South African Rand', code: 'ZAR', symbol: 'R', decimalDigits: 2 }
+];
+
+const initialTimeZones = [
+  { name: 'Asia/Kolkata', code: 'IST', offset: '+05:30', region: 'Asia' },
+  { name: 'UTC', code: 'UTC', offset: '+00:00', region: 'Global' },
+  { name: 'America/New_York', code: 'EST', offset: '-05:00', region: 'Americas' },
+  { name: 'America/Los_Angeles', code: 'PST', offset: '-08:00', region: 'Americas' },
+  { name: 'Europe/London', code: 'GMT', offset: '+00:00', region: 'Europe' },
+  { name: 'Europe/Paris', code: 'CET', offset: '+01:00', region: 'Europe' },
+  { name: 'Asia/Dubai', code: 'GST', offset: '+04:00', region: 'Middle East' },
+  { name: 'Asia/Singapore', code: 'SGT', offset: '+08:00', region: 'Asia' },
+  { name: 'Australia/Sydney', code: 'AEST', offset: '+10:00', region: 'Australia' },
+  { name: 'Asia/Tokyo', code: 'JST', offset: '+09:00', region: 'Asia' }
+];
+
 async function main() {
+  for (const ind of initialIndustries) {
+    await prisma.industry.upsert({
+      where: { code: ind.code },
+      update: { name: ind.name, category: ind.category, description: ind.description },
+      create: { name: ind.name, code: ind.code, category: ind.category, description: ind.description, isActive: true }
+    });
+  }
+
+  for (const c of initialCountries) {
+    await prisma.country.upsert({
+      where: { code: c.code },
+      update: { name: c.name, code3: c.code3, phoneCode: c.phoneCode, region: c.region },
+      create: { name: c.name, code: c.code, code3: c.code3, phoneCode: c.phoneCode, region: c.region, isActive: true }
+    });
+  }
+
+  for (const cur of initialCurrencies) {
+    await prisma.currency.upsert({
+      where: { code: cur.code },
+      update: { name: cur.name, symbol: cur.symbol, decimalDigits: cur.decimalDigits },
+      create: { name: cur.name, code: cur.code, symbol: cur.symbol, decimalDigits: cur.decimalDigits, isActive: true }
+    });
+  }
+
+  for (const tz of initialTimeZones) {
+    await prisma.timeZone.upsert({
+      where: { name: tz.name },
+      update: { code: tz.code, offset: tz.offset, region: tz.region },
+      create: { name: tz.name, code: tz.code, offset: tz.offset, region: tz.region, isActive: true }
+    });
+  }
+
   const company = await prisma.company.upsert({
     where: { slug: 'network18' },
     update: {
@@ -37,9 +160,13 @@ async function main() {
 
   for (const employee of employees) {
     await prisma.employee.upsert({
-      where: { code: employee.code },
+      where: {
+        companyId_code: {
+          companyId: company.id,
+          code: employee.code
+        }
+      },
       update: {
-        companyId: company.id,
         name: employee.name,
         role: employee.role,
         department: employee.department,
@@ -58,7 +185,6 @@ async function main() {
         joinDate: new Date(employee.joinDate),
         profile: {
           create: {
-            companyId: company.id,
             dateOfBirth: employee.code === 'EMP001245' ? new Date('1993-08-12') : null,
             gender: employee.code === 'EMP001245' ? 'Male' : null,
             maritalStatus: employee.code === 'EMP001245' ? 'Married' : null,
@@ -104,30 +230,119 @@ async function main() {
         },
         documents: {
           create: [
-            { companyId: company.id, type: 'Aadhaar Card', status: 'Verified' },
-            { companyId: company.id, type: 'PAN Card', status: 'Verified' },
-            { companyId: company.id, type: 'Offer Letter', status: 'Signed' },
-            { companyId: company.id, type: 'Experience Letter', status: 'Pending' }
+            { type: 'Aadhaar Card', status: 'Verified' },
+            { type: 'PAN Card', status: 'Verified' },
+            { type: 'Offer Letter', status: 'Signed' },
+            { type: 'Experience Letter', status: 'Pending' }
           ]
         }
       }
     });
   }
 
+  // Seed Organization Masters for the primary company
+
+  const le1 = await prisma.legalEntity.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'LE-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'LE-001', name: 'Network18 Media & Investments Ltd', taxId: '27AAACN1818A1Z0', country: 'India', address: 'Empire Complex, Lower Parel, Mumbai' }
+  });
+  const le2 = await prisma.legalEntity.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'LE-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'LE-002', name: 'TV18 Broadcast Ltd', taxId: '27AAACT1818B1Z1', country: 'India', address: 'Express Trade Towers, Noida, UP' }
+  });
+
+  const bu1 = await prisma.businessUnit.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'BU-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'BU-001', name: 'Digital Media & SaaS', legalEntityId: le1.id, description: 'Digital products, websites, and SaaS applications' }
+  });
+  const bu2 = await prisma.businessUnit.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'BU-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'BU-002', name: 'Television & Broadcast', legalEntityId: le2.id, description: 'News channels and television broadcasting operations' }
+  });
+
+  const dep1 = await prisma.department.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'DEP-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'DEP-001', name: 'Engineering', businessUnitId: bu1.id, description: 'Core software engineering and cloud platform operations' }
+  });
+  const dep2 = await prisma.department.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'DEP-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'DEP-002', name: 'People Operations', businessUnitId: bu1.id, description: 'HR, talent management, payroll, and employee relations' }
+  });
+  const dep3 = await prisma.department.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'DEP-003' } },
+    update: {},
+    create: { companyId: company.id, code: 'DEP-003', name: 'Finance & Accounts', businessUnitId: bu2.id, description: 'Financial planning, accounting, and audit compliance' }
+  });
+
+  await prisma.team.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'TEAM-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'TEAM-001', name: 'Frontend Platform Team', departmentId: dep1.id, description: 'React, Next.js, and web application UI developers' }
+  });
+  await prisma.team.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'TEAM-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'TEAM-002', name: 'Talent Acquisition Team', departmentId: dep2.id, description: 'Recruitment, sourcing, and candidate onboarding' }
+  });
+
+  await prisma.location.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'LOC-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'LOC-001', name: 'Mumbai HQ', address: 'Empire Complex, Lower Parel', city: 'Mumbai', state: 'Maharashtra', country: 'India', timezone: 'Asia/Kolkata' }
+  });
+  await prisma.location.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'LOC-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'LOC-002', name: 'Bengaluru Tech Park', address: 'Outer Ring Road, Bellandur', city: 'Bengaluru', state: 'Karnataka', country: 'India', timezone: 'Asia/Kolkata' }
+  });
+
+  await prisma.costCenter.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'CC-101' } },
+    update: {},
+    create: { companyId: company.id, code: 'CC-101', name: 'Engineering R&D Tech', departmentId: dep1.id, description: 'Software engineering cloud computing budget' }
+  });
+  await prisma.costCenter.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'CC-202' } },
+    update: {},
+    create: { companyId: company.id, code: 'CC-202', name: 'People & Corporate Admin', departmentId: dep2.id, description: 'HR, admin operations, and workplace expenses' }
+  });
+
   const passwordHash = await bcrypt.hash('Password@123', 10);
   await prisma.user.upsert({
-    where: { email: 'admin@nw18.com' },
-    update: { companyId: company.id, passwordHash, role: UserRole.platform_admin },
+
+    where: {
+      companyId_email: {
+        companyId: company.id,
+        email: 'admin@nw18.com'
+      }
+    },
+    update: { passwordHash, role: UserRole.platform_admin },
     create: { companyId: company.id, email: 'admin@nw18.com', passwordHash, role: UserRole.platform_admin }
   });
   await prisma.user.upsert({
-    where: { email: 'hr@nw18.com' },
-    update: { companyId: company.id, passwordHash, role: UserRole.org_admin },
+    where: {
+      companyId_email: {
+        companyId: company.id,
+        email: 'hr@nw18.com'
+      }
+    },
+    update: { passwordHash, role: UserRole.org_admin },
     create: { companyId: company.id, email: 'hr@nw18.com', passwordHash, role: UserRole.org_admin, employeeCode: 'EMP000744' }
   });
   await prisma.user.upsert({
-    where: { email: 'rahul.sharma@nw18.com' },
-    update: { companyId: company.id, passwordHash, role: UserRole.employee },
+    where: {
+      companyId_email: {
+        companyId: company.id,
+        email: 'rahul.sharma@nw18.com'
+      }
+    },
+    update: { passwordHash, role: UserRole.employee },
     create: { companyId: company.id, email: 'rahul.sharma@nw18.com', passwordHash, role: UserRole.employee, employeeCode: 'EMP001245' }
   });
 }

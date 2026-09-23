@@ -1,22 +1,34 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Eye, Layers3, MoreHorizontal, PackageCheck, Plus, RefreshCw, ShieldBan, ShieldCheck, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  Eye,
+  Layers3,
+  MoreHorizontal,
+  PackageCheck,
+  Plus,
+  ShieldBan,
+  ShieldCheck,
+  Trash2
+} from 'lucide-react';
 import AdminRouteGuard from '../../components/AdminRouteGuard';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import PlatformAdminSideNavigation from '../../components/PlatformAdminSideNavigation';
-import { getCompanies } from '../../lib/hrmsApi';
+import { deleteCompany, getCompanies } from '../../lib/hrmsApi';
 
 function statusClass(company) {
   return company.isActive ? 'tenant-chip-ok' : 'tenant-chip-muted';
 }
 
 export default function CompaniesPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCompany, setSelectedCompany] = useState(null);
   const [actionsMenu, setActionsMenu] = useState(null);
   const [toast, setToast] = useState('');
+  const [deleteModalCompany, setDeleteModalCompany] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadCompanies();
@@ -41,7 +53,7 @@ export default function CompaniesPage() {
 
   function openOrganization(company) {
     setActionsMenu(null);
-    setSelectedCompany(company);
+    router.push(`/platform-admin/companies/${company.id}`);
   }
 
   function toggleActionsMenu(company, event) {
@@ -76,8 +88,7 @@ export default function CompaniesPage() {
             }
 
             .tenant-header,
-            .tenant-table-header,
-            .tenant-modal-header {
+            .tenant-table-header {
               display: flex;
               align-items: flex-start;
               justify-content: space-between;
@@ -226,6 +237,7 @@ export default function CompaniesPage() {
               border-radius: var(--radius-sm);
               background: var(--color-white);
               color: var(--color-neutral-700);
+              cursor: pointer;
             }
 
             .tenant-icon-button:hover {
@@ -269,6 +281,7 @@ export default function CompaniesPage() {
               font-weight: 800;
               padding: 0 8px;
               text-align: left;
+              cursor: pointer;
             }
 
             .tenant-menu button:hover {
@@ -282,120 +295,6 @@ export default function CompaniesPage() {
               color: var(--color-neutral-500);
               padding: 18px;
               text-align: center;
-            }
-
-            .tenant-modal-backdrop {
-              position: fixed;
-              inset: 0;
-              z-index: 80;
-              display: grid;
-              place-items: center;
-              background: rgba(15, 23, 42, 0.38);
-              padding: 18px;
-            }
-
-            .tenant-modal {
-              display: grid;
-              grid-template-rows: auto minmax(0, 1fr);
-              width: min(100%, 760px);
-              max-height: calc(100vh - 36px);
-              border-radius: 8px;
-              background: var(--color-white);
-              box-shadow: var(--shadow-xl);
-              overflow: hidden;
-            }
-
-            .tenant-modal-header {
-              border-bottom: 1px solid var(--color-border);
-              padding: 18px 20px;
-            }
-
-            .tenant-modal-title {
-              display: grid;
-              gap: 3px;
-            }
-
-            .tenant-modal-title span {
-              color: #102a43;
-              font-size: 11px;
-              font-weight: 900;
-              text-transform: uppercase;
-            }
-
-            .tenant-modal-header h2 {
-              margin: 0;
-              font-size: 22px;
-              line-height: 1.2;
-            }
-
-            .tenant-detail-body {
-              display: grid;
-              align-content: start;
-              gap: 18px;
-              overflow-y: auto;
-              padding: 20px;
-            }
-
-            .tenant-detail-section {
-              display: grid;
-              gap: 10px;
-              border-bottom: 1px solid var(--color-border);
-              padding-bottom: 16px;
-            }
-
-            .tenant-detail-section:last-child {
-              border-bottom: 0;
-            }
-
-            .tenant-detail-section h3 {
-              margin: 0;
-              font-size: 16px;
-            }
-
-            .tenant-detail-grid {
-              display: grid;
-              grid-template-columns: repeat(2, minmax(0, 1fr));
-              gap: 10px;
-            }
-
-            .tenant-detail-field {
-              display: grid;
-              gap: 3px;
-              min-width: 0;
-            }
-
-            .tenant-detail-field span {
-              color: var(--color-neutral-500);
-              font-size: 11px;
-              font-weight: 900;
-              text-transform: uppercase;
-            }
-
-            .tenant-detail-field strong {
-              min-width: 0;
-              overflow-wrap: anywhere;
-              color: var(--color-neutral-900);
-            }
-
-            .tenant-usage-row {
-              display: grid;
-              grid-template-columns: 130px minmax(0, 1fr) auto;
-              align-items: center;
-              gap: 10px;
-            }
-
-            .tenant-usage-track {
-              height: 8px;
-              overflow: hidden;
-              border-radius: var(--radius-pill);
-              background: var(--color-neutral-100);
-            }
-
-            .tenant-usage-track span {
-              display: block;
-              height: 100%;
-              border-radius: inherit;
-              background: #102a43;
             }
 
             .toast {
@@ -427,11 +326,6 @@ export default function CompaniesPage() {
               .tenant-actions .btn {
                 width: 100%;
               }
-
-              .tenant-detail-grid,
-              .tenant-usage-row {
-                grid-template-columns: 1fr;
-              }
             }
           `}</style>
 
@@ -451,10 +345,6 @@ export default function CompaniesPage() {
                   <Plus size={16} />
                   Add Tenant
                 </a>
-                <button className="btn btn-secondary" type="button" onClick={loadCompanies} disabled={isLoading}>
-                  <RefreshCw size={16} />
-                  Refresh
-                </button>
               </div>
             </header>
 
@@ -497,7 +387,13 @@ export default function CompaniesPage() {
                         <tr key={company.id}>
                           <td>
                             <span className="tenant-org">
-                              <strong>{company.name}</strong>
+                              <a
+                                href={`/platform-admin/companies/${company.id}`}
+                                style={{ color: '#0f172a', textDecoration: 'none' }}
+                                className="hover:underline"
+                              >
+                                <strong>{company.name}</strong>
+                              </a>
                               <span className="tenant-muted">{company.slug}</span>
                             </span>
                           </td>
@@ -551,78 +447,61 @@ export default function CompaniesPage() {
                 {actionsMenu.company.isActive ? <ShieldBan size={15} /> : <ShieldCheck size={15} />}
                 {actionsMenu.company.isActive ? 'Suspend' : 'Activate'}
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteModalCompany(actionsMenu.company);
+                  setActionsMenu(null);
+                }}
+                style={{ color: 'var(--color-error)' }}
+              >
+                <Trash2 size={15} />
+                Delete Organization
+              </button>
             </div>
           </>
         )}
 
-        {selectedCompany && (
-          <div className="tenant-modal-backdrop" role="presentation" onClick={() => setSelectedCompany(null)}>
-            <aside className="tenant-modal" role="dialog" aria-modal="true" aria-labelledby="tenant-detail-title" onClick={(event) => event.stopPropagation()}>
-              <div className="tenant-modal-header">
-                <div className="tenant-modal-title">
-                  <span>Organization record</span>
-                  <h2 id="tenant-detail-title">{selectedCompany.name}</h2>
-                </div>
-                <button className="tenant-icon-button" type="button" aria-label="Close organization details" title="Close" onClick={() => setSelectedCompany(null)}>
-                  <X size={17} />
+        {deleteModalCompany && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(15, 23, 42, 0.6)', display: 'grid', placeItems: 'center', padding: '16px' }}>
+            <div className="card" style={{ width: 'min(100%, 440px)', padding: '24px', boxShadow: 'var(--shadow-xl)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 8px', color: '#dc2626' }}>
+                Delete Organization
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--color-neutral-700)', margin: '0 0 20px', lineHeight: '1.5' }}>
+                Are you sure you want to delete <strong>{deleteModalCompany.name}</strong> ({deleteModalCompany.slug})? This will permanently remove the organization and all its associated employees, users, and data.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button className="btn btn-tertiary" onClick={() => setDeleteModalCompany(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    try {
+                      setIsDeleting(true);
+                      await deleteCompany(deleteModalCompany.id);
+                      setDeleteModalCompany(null);
+                      setToast(`Deleted organization ${deleteModalCompany.name}`);
+                      await loadCompanies();
+                    } catch (err) {
+                      setToast(err.message || 'Failed to delete organization');
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                  style={{ background: '#dc2626', borderColor: '#dc2626' }}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Organization'}
                 </button>
               </div>
-
-              <div className="tenant-detail-body">
-                <section className="tenant-detail-section">
-                  <h3>Organization</h3>
-                  <div className="tenant-detail-grid">
-                    <DetailField label="Name" value={selectedCompany.name} />
-                    <DetailField label="Code" value={selectedCompany.slug} />
-                    <DetailField label="Domain" value={selectedCompany.domain || '-'} />
-                    <DetailField label="Country / Time Zone" value={`${selectedCompany.country || '-'} / ${selectedCompany.timezone || '-'}`} />
-                    <DetailField label="HR Contact" value={selectedCompany.hrContactEmail || '-'} />
-                    <DetailField label="Status" value={selectedCompany.isActive ? 'Active' : 'Suspended'} />
-                  </div>
-                </section>
-
-                <section className="tenant-detail-section">
-                  <h3>Current Usage</h3>
-                  <UsageRow label="Employees" current={selectedCompany._count?.employees || 0} limit={500} />
-                  <UsageRow label="Admin Users" current={selectedCompany._count?.users || 0} limit={10} />
-                </section>
-
-                <section className="tenant-detail-section">
-                  <h3>Access & Modules</h3>
-                  <div className="tenant-detail-grid">
-                    <DetailField label="Access Start" value="06 Sep 2026" />
-                    <DetailField label="Access End" value="05 Sep 2027" />
-                    <DetailField label="Enabled Modules" value="Core HR" />
-                    <DetailField label="Environment" value="Production" />
-                  </div>
-                </section>
-              </div>
-            </aside>
+            </div>
           </div>
         )}
 
         {toast && <button className="toast" type="button" onClick={() => setToast('')}>{toast}</button>}
       </main>
     </AdminRouteGuard>
-  );
-}
-
-function DetailField({ label, value }) {
-  return (
-    <div className="tenant-detail-field">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function UsageRow({ label, current, limit }) {
-  const percent = limit ? Math.min(100, Math.round((current / limit) * 100)) : 0;
-  return (
-    <div className="tenant-usage-row">
-      <strong>{label}</strong>
-      <div className="tenant-usage-track"><span style={{ width: `${percent}%` }} /></div>
-      <span>{current.toLocaleString('en-IN')} / {limit.toLocaleString('en-IN')}</span>
-    </div>
   );
 }

@@ -24,11 +24,13 @@ export function formatDate(value) {
   }).format(new Date(value));
 }
 
-export async function loginUser(email, password) {
+export async function loginUser(email, password, companySlug = null) {
+  const payload = { email, password };
+  if (companySlug) payload.companySlug = companySlug;
   const response = await request(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify(payload)
   });
   if (!response.ok) throw new Error(await responseMessage(response, 'Invalid email or password'));
   const data = await parseJson(response, {});
@@ -122,6 +124,18 @@ export function getCurrentCompany() {
   return apiRequest('/companies/current');
 }
 
+export function getCompanyById(id) {
+  return apiRequest(`/companies/${id}`);
+}
+
+export function getPublicCompanyInfo(slug) {
+  return request(`${API_BASE_URL}/companies/public/${encodeURIComponent(slug)}`).then(async (response) => {
+    const data = await parseJson(response, null);
+    if (!response.ok) throw new Error(data?.message || 'Organization not found.');
+    return data;
+  });
+}
+
 export function getPlatformHealth() {
   return request(`${API_BASE_URL}/health`).then(async (response) => {
     const data = await parseJson(response, {});
@@ -134,6 +148,19 @@ export function createCompany(payload) {
   return apiRequest('/companies', {
     method: 'POST',
     body: JSON.stringify(payload)
+  });
+}
+
+export function updateCompany(id, payload) {
+  return apiRequest(`/companies/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteCompany(id) {
+  return apiRequest(`/companies/${id}`, {
+    method: 'DELETE'
   });
 }
 
@@ -210,6 +237,390 @@ export function resetPassword(tokenValue, password) {
     return data;
   });
 }
+
+export function getIndustries() {
+  return request(`${API_BASE_URL}/industries`).then(async (response) => {
+    const data = await parseJson(response, []);
+    if (!response.ok) throw new Error('Unable to load industries list.');
+    return data;
+  });
+}
+
+export function getAdminIndustries(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const query = params.toString();
+  return apiRequest(`/industries/admin${query ? `?${query}` : ''}`);
+}
+
+export function createIndustry(payload) {
+  return apiRequest('/industries', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateIndustry(id, payload) {
+  return apiRequest(`/industries/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleIndustryStatus(id) {
+  return apiRequest(`/industries/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteIndustry(id) {
+  return apiRequest(`/industries/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Countries API Helpers
+export function getCountries() {
+  return request(`${API_BASE_URL}/countries`).then(async (response) => {
+    const data = await parseJson(response, []);
+    if (!response.ok) throw new Error('Unable to load countries list.');
+    return data;
+  });
+}
+
+export function getAdminCountries(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const query = params.toString();
+  return apiRequest(`/countries/admin${query ? `?${query}` : ''}`);
+}
+
+export function createCountry(payload) {
+  return apiRequest('/countries', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateCountry(id, payload) {
+  return apiRequest(`/countries/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleCountryStatus(id) {
+  return apiRequest(`/countries/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteCountry(id) {
+  return apiRequest(`/countries/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Currencies API Helpers
+export function getCurrencies() {
+  return request(`${API_BASE_URL}/currencies`).then(async (response) => {
+    const data = await parseJson(response, []);
+    if (!response.ok) throw new Error('Unable to load currencies list.');
+    return data;
+  });
+}
+
+export function getAdminCurrencies(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const query = params.toString();
+  return apiRequest(`/currencies/admin${query ? `?${query}` : ''}`);
+}
+
+export function createCurrency(payload) {
+  return apiRequest('/currencies', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateCurrency(id, payload) {
+  return apiRequest(`/currencies/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleCurrencyStatus(id) {
+  return apiRequest(`/currencies/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteCurrency(id) {
+  return apiRequest(`/currencies/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Time Zones API Helpers
+export function getTimeZones() {
+  return request(`${API_BASE_URL}/time-zones`).then(async (response) => {
+    const data = await parseJson(response, []);
+    if (!response.ok) throw new Error('Unable to load time zones list.');
+    return data;
+  });
+}
+
+export function getAdminTimeZones(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const query = params.toString();
+  return apiRequest(`/time-zones/admin${query ? `?${query}` : ''}`);
+}
+
+export function createTimeZone(payload) {
+  return apiRequest('/time-zones', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateTimeZone(id, payload) {
+  return apiRequest(`/time-zones/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleTimeZoneStatus(id) {
+  return apiRequest(`/time-zones/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteTimeZone(id) {
+  return apiRequest(`/time-zones/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ORGANIZATION MASTERS (Org Admin)
+// ---------------------------------------------------------------------------
+
+// Legal Entities
+export function getLegalEntities(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/legal-entities?${params.toString()}`);
+}
+
+export function createLegalEntity(payload) {
+  return apiRequest('/org-masters/legal-entities', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateLegalEntity(id, payload) {
+  return apiRequest(`/org-masters/legal-entities/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleLegalEntityStatus(id) {
+  return apiRequest(`/org-masters/legal-entities/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteLegalEntity(id) {
+  return apiRequest(`/org-masters/legal-entities/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Business Units
+export function getBusinessUnits(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/business-units?${params.toString()}`);
+}
+
+export function createBusinessUnit(payload) {
+  return apiRequest('/org-masters/business-units', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateBusinessUnit(id, payload) {
+  return apiRequest(`/org-masters/business-units/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleBusinessUnitStatus(id) {
+  return apiRequest(`/org-masters/business-units/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteBusinessUnit(id) {
+  return apiRequest(`/org-masters/business-units/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Departments
+export function getOrgDepartments(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/departments?${params.toString()}`);
+}
+
+export function createOrgDepartment(payload) {
+  return apiRequest('/org-masters/departments', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateOrgDepartment(id, payload) {
+  return apiRequest(`/org-masters/departments/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleOrgDepartmentStatus(id) {
+  return apiRequest(`/org-masters/departments/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteOrgDepartment(id) {
+  return apiRequest(`/org-masters/departments/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Teams
+export function getTeams(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/teams?${params.toString()}`);
+}
+
+export function createTeam(payload) {
+  return apiRequest('/org-masters/teams', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateTeam(id, payload) {
+  return apiRequest(`/org-masters/teams/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleTeamStatus(id) {
+  return apiRequest(`/org-masters/teams/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteTeam(id) {
+  return apiRequest(`/org-masters/teams/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Locations
+export function getOrgLocations(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/locations?${params.toString()}`);
+}
+
+export function createOrgLocation(payload) {
+  return apiRequest('/org-masters/locations', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateOrgLocation(id, payload) {
+  return apiRequest(`/org-masters/locations/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleOrgLocationStatus(id) {
+  return apiRequest(`/org-masters/locations/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteOrgLocation(id) {
+  return apiRequest(`/org-masters/locations/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Cost Centers
+export function getCostCenters(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/cost-centers?${params.toString()}`);
+}
+
+export function createCostCenter(payload) {
+  return apiRequest('/org-masters/cost-centers', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateCostCenter(id, payload) {
+  return apiRequest(`/org-masters/cost-centers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleCostCenterStatus(id) {
+  return apiRequest(`/org-masters/cost-centers/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteCostCenter(id) {
+  return apiRequest(`/org-masters/cost-centers/${id}`, {
+    method: 'DELETE'
+  });
+}
+
 
 async function request(url, options) {
   try {
