@@ -313,6 +313,140 @@ async function main() {
     create: { companyId: company.id, code: 'CC-202', name: 'People & Corporate Admin', departmentId: dep2.id, description: 'HR, admin operations, and workplace expenses' }
   });
 
+  // Seed New HRMS Masters
+  const jf1 = await prisma.jobFamily.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'JF-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'JF-001', name: 'Software Engineering', stream: 'Technical Specialist', description: 'Core product engineering, platform development, and cloud DevOps' }
+  });
+
+  const jf2 = await prisma.jobFamily.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'JF-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'JF-002', name: 'People Operations & HR', stream: 'Operations', description: 'Talent management, HR ops, payroll, and employee experience' }
+  });
+
+  const jf3 = await prisma.jobFamily.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'JF-003' } },
+    update: {},
+    create: { companyId: company.id, code: 'JF-003', name: 'Product & Design', stream: 'Individual Contributor', description: 'Product management, user research, UI/UX design, and analytics' }
+  });
+
+  const gb1 = await prisma.gradeBand.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'GRD-L1' } },
+    update: {},
+    create: { companyId: company.id, code: 'GRD-L1', name: 'Associate / Level 1', levelRank: 1, minSalary: 350000, maxSalary: 650000, currency: 'INR', description: 'Entry level individual contributors' }
+  });
+
+  const gb2 = await prisma.gradeBand.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'GRD-L2' } },
+    update: {},
+    create: { companyId: company.id, code: 'GRD-L2', name: 'Mid-Level / Level 2', levelRank: 2, minSalary: 650000, maxSalary: 1200000, currency: 'INR', description: 'Experienced professionals and specialists' }
+  });
+
+  const gb3 = await prisma.gradeBand.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'GRD-L3' } },
+    update: {},
+    create: { companyId: company.id, code: 'GRD-L3', name: 'Senior / Level 3', levelRank: 3, minSalary: 1200000, maxSalary: 2200000, currency: 'INR', description: 'Senior engineers, leads, and domain experts' }
+  });
+
+  await prisma.jobTitle.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'DES-001' } },
+    update: {},
+    create: { companyId: company.id, code: 'DES-001', name: 'Senior Software Engineer', jobFamilyId: jf1.id, gradeBandId: gb3.id, description: 'Lead frontend & backend architecture implementation' }
+  });
+
+  await prisma.jobTitle.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'DES-002' } },
+    update: {},
+    create: { companyId: company.id, code: 'DES-002', name: 'Product Manager', jobFamilyId: jf3.id, gradeBandId: gb2.id, description: 'Product roadmap strategy and feature lifecycle execution' }
+  });
+
+  await prisma.jobTitle.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'DES-003' } },
+    update: {},
+    create: { companyId: company.id, code: 'DES-003', name: 'HR Executive', jobFamilyId: jf2.id, gradeBandId: gb1.id, description: 'Onboarding, employee records, and payroll support' }
+  });
+
+  await prisma.payComponent.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'PAY-BAS' } },
+    update: {},
+    create: { companyId: company.id, code: 'PAY-BAS', name: 'Basic Salary', type: 'Earning', calculationType: 'Percentage of Basic', value: 50, isTaxable: true, isStatutory: false, description: 'Core salary component forming base for statutory calculation' }
+  });
+
+  await prisma.payComponent.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'PAY-HRA' } },
+    update: {},
+    create: { companyId: company.id, code: 'PAY-HRA', name: 'House Rent Allowance (HRA)', type: 'Earning', calculationType: 'Percentage of Basic', value: 40, isTaxable: true, isStatutory: false, description: 'Housing accommodation allowance' }
+  });
+
+  await prisma.payComponent.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'PAY-PF' } },
+    update: {},
+    create: { companyId: company.id, code: 'PAY-PF', name: 'Provident Fund (PF)', type: 'Statutory', calculationType: 'Percentage of Basic', value: 12, isTaxable: false, isStatutory: true, description: 'Mandatory statutory provident fund contribution' }
+  });
+
+  await prisma.payComponent.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'PAY-BON' } },
+    update: {},
+    create: { companyId: company.id, code: 'PAY-BON', name: 'Performance Bonus', type: 'Earning', calculationType: 'Variable', value: 100000, isTaxable: true, isStatutory: false, description: 'Annual performance linked incentive' }
+  });
+
+  // Seed Workforce & Schedule Masters
+  await prisma.employmentType.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'EMPT-FT' } },
+    update: {},
+    create: { companyId: company.id, code: 'EMPT-FT', name: 'Full-time Permanent', category: 'Permanent', noticePeriodDays: 60, description: 'Regular full-time employment with full benefits' }
+  });
+  await prisma.employmentType.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'EMPT-CT' } },
+    update: {},
+    create: { companyId: company.id, code: 'EMPT-CT', name: 'Fixed Term Contract', category: 'Contract', noticePeriodDays: 30, description: 'Fixed period contractual agreement' }
+  });
+  await prisma.employmentType.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'EMPT-INT' } },
+    update: {},
+    create: { companyId: company.id, code: 'EMPT-INT', name: 'Graduate Trainee / Intern', category: 'Internship', noticePeriodDays: 15, description: 'Trainees and student interns' }
+  });
+
+  await prisma.workMode.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'WM-ONSITE' } },
+    update: {},
+    create: { companyId: company.id, code: 'WM-ONSITE', name: 'On-site Office Mandatory', allowedRemoteDays: 0, requiresGeofencing: true, description: 'Regular physical presence at campus office' }
+  });
+  await prisma.workMode.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'WM-HYBRID' } },
+    update: {},
+    create: { companyId: company.id, code: 'WM-HYBRID', name: 'Hybrid Flex (3 Days Remote)', allowedRemoteDays: 3, requiresGeofencing: false, description: 'Flexible hybrid attendance policy' }
+  });
+  await prisma.workMode.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'WM-REMOTE' } },
+    update: {},
+    create: { companyId: company.id, code: 'WM-REMOTE', name: 'Full Remote', allowedRemoteDays: 5, requiresGeofencing: false, description: '100% work from anywhere' }
+  });
+
+  await prisma.workShift.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'SFT-GEN' } },
+    update: {},
+    create: { companyId: company.id, code: 'SFT-GEN', name: 'General Day Shift', startTime: '09:00', endTime: '18:00', gracePeriodMinutes: 15, halfDayHours: 4.0, breakDurationMins: 60, isFlexible: false, isRotational: false, description: 'Standard day shift schedule' }
+  });
+  await prisma.workShift.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'SFT-US' } },
+    update: {},
+    create: { companyId: company.id, code: 'SFT-US', name: 'US Night Shift', startTime: '18:30', endTime: '03:30', gracePeriodMinutes: 15, halfDayHours: 4.0, breakDurationMins: 60, isFlexible: false, isRotational: true, description: 'Overnight broadcast & tech shift' }
+  });
+
+  await prisma.holidayCalendar.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'HOL-IND-01' } },
+    update: {},
+    create: { companyId: company.id, code: 'HOL-IND-01', name: 'Republic Day', date: new Date('2026-01-26'), type: 'National', applicableLocation: 'All Locations', description: 'National holiday across all Indian offices' }
+  });
+  await prisma.holidayCalendar.upsert({
+    where: { companyId_code: { companyId: company.id, code: 'HOL-IND-02' } },
+    update: {},
+    create: { companyId: company.id, code: 'HOL-IND-02', name: 'Diwali / Deepavali', date: new Date('2026-11-08'), type: 'Mandatory', applicableLocation: 'All Locations', description: 'Festival of lights' }
+  });
+
   const passwordHash = await bcrypt.hash('Password@123', 10);
   await prisma.user.upsert({
 

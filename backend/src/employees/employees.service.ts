@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EmployeeStatus, Prisma, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { RequestUser } from '../common/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -8,6 +9,7 @@ import {
   TransferEmployeeDto,
   UpdateEmployeeDto,
   UpdateManagerDto,
+  UpdateOnboardingDto,
   UpdateStatusDto
 } from './dto';
 
@@ -78,16 +80,123 @@ export class EmployeesService {
         },
         include: this.includeProfile()
       });
-      await this.audit(employee.code, actor, 'employee.created', null, employee);
-      return employee;
+
+      const tempPassword = `Hrms#${Math.floor(100000 + Math.random() * 900000)}`;
+      const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+      await this.prisma.user.upsert({
+        where: {
+          companyId_email: {
+            companyId: this.companyId(actor),
+            email: dto.email.toLowerCase()
+          }
+        },
+        create: {
+          companyId: this.companyId(actor),
+          email: dto.email.toLowerCase(),
+          passwordHash,
+          role: UserRole.employee,
+          employeeCode: employee.code,
+          isActive: true
+        },
+        update: {
+          passwordHash,
+          employeeCode: employee.code,
+          isActive: true
+        }
+      });
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3006';
+      const loginUrl = `${frontendUrl}/onboard?email=${encodeURIComponent(employee.email)}&code=${employee.code}&otp=${otpCode}`;
+
+      const inviteDetails = {
+        sentToEmail: employee.email,
+        sentToPhone: employee.phone || '+91 98765 43210',
+        loginUrl,
+        tempPassword,
+        otpCode,
+        instructions: '1. Click the HRMS onboarding link.\n2. Verify email/mobile using OTP or Temporary Password.\n3. Create your new password.\n4. Access HRMS.'
+      };
+
+      await this.audit(employee.code, actor, 'employee.invited', null, { ...employee, inviteDetails });
+
+      return {
+        ...employee,
+        inviteDetails
+      };
     } catch (error) {
       this.handleEmployeeConflict(error);
     }
   }
 
+  async resendInvite(code: string, actor: RequestUser) {
+    const employee = await this.findByCode(code, actor);
+    const tempPassword = `Hrms#${Math.floor(100000 + Math.random() * 900000)}`;
+    const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    await this.prisma.user.upsert({
+      where: {
+        companyId_email: {
+          companyId: this.companyId(actor),
+          email: employee.email.toLowerCase()
+        }
+      },
+      create: {
+        companyId: this.companyId(actor),
+        email: employee.email.toLowerCase(),
+        passwordHash,
+        role: UserRole.employee,
+        employeeCode: employee.code,
+        isActive: true
+      },
+      update: {
+        passwordHash,
+        employeeCode: employee.code,
+        isActive: true
+      }
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3006';
+    const loginUrl = `${frontendUrl}/onboard?email=${encodeURIComponent(employee.email)}&code=${employee.code}&otp=${otpCode}`;
+
+    const inviteDetails = {
+      sentToEmail: employee.email,
+      sentToPhone: employee.phone || '+91 98765 43210',
+      loginUrl,
+      tempPassword,
+      otpCode,
+      instructions: '1. Click the HRMS onboarding link.\n2. Verify email/mobile using OTP or Temporary Password.\n3. Create your new password.\n4. Access HRMS.'
+    };
+
+    await this.audit(code, actor, 'employee.invite_resent', null, inviteDetails);
+
+    return {
+      ...employee,
+      inviteDetails
+    };
+  }
+
   async update(code: string, dto: UpdateEmployeeDto, actor: RequestUser) {
     const before = await this.findByCode(code, actor);
+    
+    if (actor.role === UserRole.employee) {
+      if (actor.employeeCode !== code) {
+        throw new ForbiddenException('Employees can only edit their own profile');
+      }
+      const hrRestrictedFields = ['role', 'department', 'entity', 'type', 'grade', 'manager'];
+      const attemptedRestricted = hrRestrictedFields.filter((field) => dto[field as keyof UpdateEmployeeDto] !== undefined);
+      if (attemptedRestricted.length > 0) {
+        throw new ForbiddenException(
+          `Employees cannot directly edit HR-controlled fields: ${attemptedRestricted.join(', ')}`
+        );
+      }
+    }
+
     try {
+      const { profile, ...employeeData } = dto;
+
       const employee = await this.prisma.employee.update({
         where: {
           companyId_code: {
@@ -95,7 +204,22 @@ export class EmployeesService {
             code
           }
         },
-        data: dto,
+        data: {
+          ...employeeData,
+          ...(profile
+            ? {
+                profile: {
+                  upsert: {
+                    create: {
+                      company: { connect: { id: this.companyId(actor) } },
+                      ...profile
+                    },
+                    update: profile
+                  }
+                }
+              }
+            : {})
+        },
         include: this.includeProfile()
       });
       await this.audit(code, actor, 'employee.updated', before, employee);
@@ -192,6 +316,107 @@ export class EmployeesService {
       orderBy: { createdAt: 'desc' },
       include: { actor: { select: { email: true, role: true } } }
     });
+  }
+
+  async getOnboardingQueue(actor: RequestUser) {
+    const employees = await this.prisma.employee.findMany({
+      where: { companyId: this.companyId(actor) },
+      orderBy: { joinDate: 'asc' },
+      include: this.includeProfile()
+    });
+
+    const now = new Date();
+    const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const queue = employees.map((emp) => {
+      const joinDateObj = new Date(emp.joinDate);
+      const isPreJoining = emp.status !== EmployeeStatus.Active && emp.status !== EmployeeStatus.Terminated;
+
+      const stage1_inviteSent = true;
+      const stage2_docsVerified = Boolean(emp.documents && emp.documents.length > 0) || emp.documentNote !== 'No recent uploads';
+      const stage3_assetsAllocated = Boolean(emp.profile?.workMode || emp.profile?.shift);
+      const stage4_bankVerified = Boolean(emp.profile?.bankDetails || emp.profile?.statutoryDetails);
+
+      const completedCount = [stage1_inviteSent, stage2_docsVerified, stage3_assetsAllocated, stage4_bankVerified].filter(Boolean).length;
+      const completionPercentage = Math.round((completedCount / 4) * 100);
+
+      let currentStageName = 'Stage 1: Invite Sent';
+      if (!stage2_docsVerified) currentStageName = 'Stage 2: Pending Document Verification';
+      else if (!stage3_assetsAllocated) currentStageName = 'Stage 3: Pending IT Asset Allocation';
+      else if (!stage4_bankVerified) currentStageName = 'Stage 4: Pending Bank & Statutory Setup';
+      else currentStageName = 'Stage 4: 100% Onboarding Complete';
+
+      const isReadyForDayOne = completionPercentage === 100;
+      const isJoiningThisWeek = joinDateObj >= now && joinDateObj <= oneWeekFromNow;
+
+      return {
+        ...emp,
+        isPreJoining,
+        onboardingProgress: {
+          completedCount,
+          totalCount: 4,
+          completionPercentage,
+          currentStageName,
+          isReadyForDayOne,
+          isJoiningThisWeek,
+          stages: {
+            stage1_inviteSent,
+            stage2_docsVerified,
+            stage3_assetsAllocated,
+            stage4_bankVerified
+          }
+        }
+      };
+    });
+
+    const totalPreJoinees = queue.length;
+    const joiningThisWeek = queue.filter((q) => q.onboardingProgress.isJoiningThisWeek).length;
+    const pendingVerification = queue.filter((q) => !q.onboardingProgress.stages.stage2_docsVerified).length;
+    const readyForDayOne = queue.filter((q) => q.onboardingProgress.isReadyForDayOne).length;
+
+    return {
+      metrics: {
+        totalPreJoinees,
+        joiningThisWeek,
+        pendingVerification,
+        readyForDayOne
+      },
+      queue
+    };
+  }
+
+  async updateOnboardingStage(code: string, dto: UpdateOnboardingDto, actor: RequestUser) {
+    const before = await this.findByCode(code, actor);
+    let updateData: Prisma.EmployeeUpdateInput = {};
+
+    if (dto.markDayOneJoined) {
+      updateData.status = EmployeeStatus.Active;
+    }
+
+    if (dto.note) {
+      updateData.documentNote = `Onboarding update: ${dto.note}`;
+    }
+
+    const employee = await this.prisma.employee.update({
+      where: {
+        companyId_code: {
+          companyId: this.companyId(actor),
+          code
+        }
+      },
+      data: updateData,
+      include: this.includeProfile()
+    });
+
+    await this.audit(
+      code,
+      actor,
+      dto.markDayOneJoined ? 'employee.onboarding_day1_activated' : 'employee.onboarding_stage_updated',
+      before,
+      employee
+    );
+
+    return employee;
   }
 
   private async audit(employeeCode: string, actor: RequestUser, action: string, before: unknown, after: unknown) {

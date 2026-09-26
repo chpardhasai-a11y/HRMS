@@ -58,6 +58,53 @@ describe('EmployeesService', () => {
       type: 'Permanent',
       grade: 'G7',
       joinDate: '2026-09-06'
-    }, actor)).rejects.toThrow('Employee code already exists.');
+    }, actor)).rejects.toThrow('Employee code already exists');
+  });
+
+  it('creates employee, upserts user account, and returns invite details', async () => {
+    const prisma = {
+      employee: {
+        create: jest.fn().mockResolvedValue({
+          code: 'EMP001245',
+          name: 'Rahul Sharma',
+          email: 'rahul.sharma@nw18.com',
+          companyId: 'c1'
+        })
+      },
+      user: {
+        upsert: jest.fn().mockResolvedValue({ id: 'u2' })
+      },
+      auditLog: { create: jest.fn() }
+    };
+    const service = new EmployeesService(prisma as any);
+
+    const res = await service.create({
+      code: 'EMP001245',
+      name: 'Rahul Sharma',
+      email: 'rahul.sharma@nw18.com',
+      role: 'Senior Software Engineer',
+      department: 'Engineering',
+      entity: 'Network18 Media',
+      location: 'Mumbai HQ',
+      manager: 'Sneha Iyer',
+      type: 'Permanent',
+      grade: 'G7',
+      joinDate: '2026-09-06'
+    }, actor);
+
+    expect(res).toMatchObject({
+      code: 'EMP001245',
+      inviteDetails: expect.objectContaining({
+        sentToEmail: 'rahul.sharma@nw18.com',
+        tempPassword: expect.any(String),
+        otpCode: expect.any(String)
+      })
+    });
+    expect(prisma.user.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        companyId_email: { companyId: 'c1', email: 'rahul.sharma@nw18.com' }
+      })
+    }));
   });
 });
+

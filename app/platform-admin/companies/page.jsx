@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import AdminRouteGuard from '../../components/AdminRouteGuard';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import PlatformAdminSideNavigation from '../../components/PlatformAdminSideNavigation';
 import { deleteCompany, getCompanies } from '../../lib/hrmsApi';
 
 function statusClass(company) {
@@ -69,8 +68,7 @@ export default function CompaniesPage() {
 
   return (
     <AdminRouteGuard allowedRole="platform_admin">
-      <main className="app-shell-with-nav">
-        <PlatformAdminSideNavigation activePath="/platform-admin/companies" />
+      <div style={{ width: '100%' }}>
         <section className="platform-tenant-workspace">
           <style>{`
             .platform-tenant-workspace {
@@ -501,7 +499,7 @@ export default function CompaniesPage() {
         )}
 
         {toast && <button className="toast" type="button" onClick={() => setToast('')}>{toast}</button>}
-      </main>
+      </div>
     </AdminRouteGuard>
   );
 }

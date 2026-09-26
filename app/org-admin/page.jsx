@@ -2,17 +2,24 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  CheckCircle2,
+  Copy,
   Download,
   Edit3,
+  ExternalLink,
   FileClock,
   FileDown,
   FileUp,
   Filter,
   GitBranch,
+  KeyRound,
+  Mail,
   MoreHorizontal,
   Plus,
   Search,
+  Send,
   ShieldAlert,
+  Smartphone,
   ToggleLeft,
   Upload,
   UserRound,
@@ -22,26 +29,35 @@ import {
 import AdminRouteGuard from '../components/AdminRouteGuard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import DropdownSelect from '../components/DropdownSelect';
-import OrgAdminSideNavigation from '../components/OrgAdminSideNavigation';
+import { SkeletonMetrics, SkeletonTable } from '../components/SkeletonLoader';
 import {
   createEmployee,
   formatDate,
   getCurrentCompany,
   getEmployeeAudit,
   getEmployees,
+  getEmploymentTypes,
+  getGradeBands,
+  getJobTitles,
+  getLegalEntities,
+  getOrgDepartments,
+  getOrgLocations,
   recordDocumentNote,
+  resendEmployeeInvite,
   statusLabel,
   transferEmployee,
   updateEmployee as apiUpdateEmployee,
   updateEmployeeManager,
   updateEmployeeStatus
 } from '../lib/hrmsApi';
+import './org-admin.css';
 
 const statusOptions = ['Active', 'On Leave', 'Inactive', 'Resigned', 'Terminated'];
-const departmentOptions = ['Engineering', 'Product', 'Design', 'People Ops', 'Finance', 'Sales'];
-const locationOptions = ['Mumbai HQ', 'Bengaluru', 'Delhi NCR', 'Remote', 'Hyderabad'];
-const typeOptions = ['Permanent', 'Contract', 'Intern', 'Consultant'];
-const gradeOptions = ['G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'C3'];
+const defaultDepartmentOptions = ['Engineering', 'Product', 'Design', 'People Ops', 'Finance', 'Sales'];
+const defaultLocationOptions = ['Mumbai HQ', 'Bengaluru', 'Delhi NCR', 'Remote', 'Hyderabad'];
+const defaultTypeOptions = ['Permanent', 'Contract', 'Intern', 'Consultant'];
+const defaultGradeOptions = ['G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'C3'];
+const defaultRoleOptions = ['Senior Software Engineer', 'Product Manager', 'UX Designer', 'HR Business Partner', 'Financial Analyst', 'Account Executive'];
 
 const emptyEmployeeForm = {
   code: '',
@@ -49,12 +65,12 @@ const emptyEmployeeForm = {
   email: '',
   phone: '',
   role: '',
-  department: departmentOptions[0],
+  department: defaultDepartmentOptions[0],
   entity: '',
-  location: locationOptions[0],
+  location: defaultLocationOptions[0],
   manager: '',
-  type: typeOptions[0],
-  grade: gradeOptions[0],
+  type: defaultTypeOptions[0],
+  grade: defaultGradeOptions[0],
   joinDate: new Date().toISOString().slice(0, 10)
 };
 
@@ -71,7 +87,6 @@ function createFormState(employee) {
 export default function AdminPage() {
   const [employees, setEmployees] = useState([]);
   const [openMenuCode, setOpenMenuCode] = useState(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [modal, setModal] = useState(null);
   const [formState, setFormState] = useState({});
   const [toast, setToast] = useState('');
@@ -79,35 +94,100 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [auditItems, setAuditItems] = useState([]);
   const [activeCompany, setActiveCompany] = useState(null);
+  const [masters, setMasters] = useState({
+    legalEntities: [],
+    departments: [],
+    locations: [],
+    employmentTypes: [],
+    gradeBands: [],
+    jobTitles: []
+  });
   const [filters, setFilters] = useState({ search: '', status: '', department: '', location: '', type: '' });
 
   useEffect(() => {
     loadAdminContext();
   }, []);
 
+  const departmentOptions = useMemo(() => {
+    if (masters.departments && masters.departments.length > 0) {
+      return masters.departments.filter((d) => d.isActive !== false).map((d) => d.name);
+    }
+    return defaultDepartmentOptions;
+  }, [masters.departments]);
+
+  const locationOptions = useMemo(() => {
+    if (masters.locations && masters.locations.length > 0) {
+      return masters.locations.filter((l) => l.isActive !== false).map((l) => l.name);
+    }
+    return defaultLocationOptions;
+  }, [masters.locations]);
+
+  const typeOptions = useMemo(() => {
+    if (masters.employmentTypes && masters.employmentTypes.length > 0) {
+      return masters.employmentTypes.filter((t) => t.isActive !== false).map((t) => t.name);
+    }
+    return defaultTypeOptions;
+  }, [masters.employmentTypes]);
+
+  const gradeOptions = useMemo(() => {
+    if (masters.gradeBands && masters.gradeBands.length > 0) {
+      return masters.gradeBands.filter((g) => g.isActive !== false).map((g) => g.name || g.code);
+    }
+    return defaultGradeOptions;
+  }, [masters.gradeBands]);
+
+  const entityOptions = useMemo(() => {
+    if (masters.legalEntities && masters.legalEntities.length > 0) {
+      return masters.legalEntities.filter((e) => e.isActive !== false).map((e) => e.name);
+    }
+    return activeCompany?.name ? [activeCompany.name] : ['Network18 Media'];
+  }, [masters.legalEntities, activeCompany]);
+
+  const roleOptions = useMemo(() => {
+    if (masters.jobTitles && masters.jobTitles.length > 0) {
+      return masters.jobTitles.filter((j) => j.isActive !== false).map((j) => j.name);
+    }
+    return defaultRoleOptions;
+  }, [masters.jobTitles]);
+
   const selectedEmployee = useMemo(
     () => employees.find((employee) => employee.code === modal?.employeeCode),
     [employees, modal]
   );
 
-  async function loadEmployees(nextFilters = filters) {
-    try {
-      setIsLoading(true);
-      setError('');
-      setEmployees(await getEmployees(nextFilters));
-    } catch (loadError) {
-      setError(loadError.message || 'Unable to load employees.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   async function loadAdminContext() {
     try {
       setIsLoading(true);
       setError('');
-      setActiveCompany(await getCurrentCompany());
-      setEmployees(await getEmployees(filters));
+      const [
+        companyData,
+        employeeData,
+        legalEntitiesData,
+        departmentsData,
+        locationsData,
+        employmentTypesData,
+        gradeBandsData,
+        jobTitlesData
+      ] = await Promise.all([
+        getCurrentCompany().catch(() => null),
+        getEmployees({}),
+        getLegalEntities().catch(() => []),
+        getOrgDepartments().catch(() => []),
+        getOrgLocations().catch(() => []),
+        getEmploymentTypes().catch(() => []),
+        getGradeBands().catch(() => []),
+        getJobTitles().catch(() => [])
+      ]);
+      setActiveCompany(companyData);
+      setEmployees(employeeData || []);
+      setMasters({
+        legalEntities: legalEntitiesData || [],
+        departments: departmentsData || [],
+        locations: locationsData || [],
+        employmentTypes: employmentTypesData || [],
+        gradeBands: gradeBandsData || [],
+        jobTitles: jobTitlesData || []
+      });
     } catch (loadError) {
       setError(loadError.message || 'Unable to load admin workspace.');
     } finally {
@@ -115,43 +195,58 @@ export default function AdminPage() {
     }
   }
 
-  async function openModal(type, employee) {
+  // Instant client-side filtering for 0ms lag UI response
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((emp) => {
+      if (filters.status && statusLabel(emp.status) !== statusLabel(filters.status)) return false;
+      if (filters.department && emp.department !== filters.department) return false;
+      if (filters.location && emp.location !== filters.location) return false;
+      if (filters.type && emp.type !== filters.type) return false;
+      if (filters.search?.trim()) {
+        const query = filters.search.trim().toLowerCase();
+        const matchName = emp.name.toLowerCase().includes(query);
+        const matchCode = emp.code.toLowerCase().includes(query);
+        const matchRole = emp.role.toLowerCase().includes(query);
+        const matchManager = emp.manager?.toLowerCase().includes(query);
+        if (!matchName && !matchCode && !matchRole && !matchManager) return false;
+      }
+      return true;
+    });
+  }, [employees, filters]);
+
+  function openModal(type, employee = null) {
     setOpenMenuCode(null);
     if (type === 'create') {
       setFormState({
-        ...emptyEmployeeForm,
-        entity: activeCompany?.name || '',
-        code: `EMP${String(Date.now()).slice(-6)}`
+        code: `EMP${String(Date.now()).slice(-6)}`,
+        name: '',
+        email: '',
+        phone: '',
+        role: roleOptions[0] || 'Senior Software Engineer',
+        department: departmentOptions[0] || 'Engineering',
+        entity: entityOptions[0] || activeCompany?.name || '',
+        location: locationOptions[0] || 'Mumbai HQ',
+        manager: '',
+        type: typeOptions[0] || 'Permanent',
+        grade: gradeOptions[0] || 'G7',
+        joinDate: new Date().toISOString().slice(0, 10)
       });
       setModal({ type });
       return;
     }
-    setFormState(createFormState(employee));
-    setModal({ type, employeeCode: employee.code });
-    if (type === 'audit') {
-      try {
-        setAuditItems(await getEmployeeAudit(employee.code));
-      } catch {
-        setAuditItems([]);
+    if (employee) {
+      setFormState(createFormState(employee));
+      setModal({ type, employeeCode: employee.code });
+      if (type === 'audit') {
+        getEmployeeAudit(employee.code)
+          .then(setAuditItems)
+          .catch(() => setAuditItems([]));
       }
     }
   }
 
-  function toggleRowMenu(event, employeeCode) {
-    event.stopPropagation();
-    if (openMenuCode === employeeCode) {
-      setOpenMenuCode(null);
-      return;
-    }
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const menuWidth = 240;
-    const menuHeight = 340;
-    setMenuPosition({
-      top: Math.min(rect.bottom + 6, window.innerHeight - menuHeight - 12),
-      left: Math.max(12, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 12))
-    });
-    setOpenMenuCode(employeeCode);
+  function toggleRowMenu(employeeCode) {
+    setOpenMenuCode((prev) => (prev === employeeCode ? null : employeeCode));
   }
 
   function closeModal() {
@@ -174,20 +269,12 @@ export default function AdminPage() {
     }
   }
 
-  function handleFormChange(field, value) {
-    setFormState((current) => ({ ...current, [field]: value }));
-  }
-
   function handleFilterChange(field, value) {
-    const nextFilters = { ...filters, [field]: value };
-    setFilters(nextFilters);
-    loadEmployees(nextFilters);
+    setFilters((current) => ({ ...current, [field]: value }));
   }
 
   function clearFilters() {
-    const nextFilters = { search: '', status: '', department: '', location: '', type: '' };
-    setFilters(nextFilters);
-    loadEmployees(nextFilters);
+    setFilters({ search: '', status: '', department: '', location: '', type: '' });
   }
 
   async function createEmployeeRecord() {
@@ -214,10 +301,21 @@ export default function AdminPage() {
         joinDate: formState.joinDate
       });
       setEmployees((currentEmployees) => [...currentEmployees, employee].sort((first, second) => first.code.localeCompare(second.code)));
-      setToast(`Created ${employee.code}.`);
-      closeModal();
+      setToast(`Invitation dispatched to ${employee.name} (${employee.email}).`);
+      setModal({ type: 'invite_sent', employee, inviteDetails: employee.inviteDetails });
     } catch (saveError) {
-      setToast(saveError.message || 'Unable to create employee.');
+      setToast(saveError.message || 'Unable to send invitation.');
+    }
+  }
+
+  async function resendInviteRecord(employee) {
+    setOpenMenuCode(null);
+    try {
+      const res = await resendEmployeeInvite(employee.code);
+      setToast(`Invitation resent to ${employee.name}.`);
+      setModal({ type: 'invite_sent', employee: res, inviteDetails: res.inviteDetails });
+    } catch (err) {
+      setToast(err.message || 'Unable to resend invitation.');
     }
   }
 
@@ -238,51 +336,51 @@ export default function AdminPage() {
   function renderEditForm() {
     return (
       <div className="form-grid">
-        {modal.type === 'create' && <Field label="Employee Code" value={formState.code} onChange={(value) => handleFormChange('code', value)} />}
-        <Field label="Employee Name" value={formState.name} onChange={(value) => handleFormChange('name', value)} />
-        <Field label="Email" value={formState.email} onChange={(value) => handleFormChange('email', value)} />
-        <Field label="Phone" value={formState.phone} onChange={(value) => handleFormChange('phone', value)} />
-        <Field label="Role" value={formState.role} onChange={(value) => handleFormChange('role', value)} />
-        <Field label="Legal Entity" value={formState.entity} onChange={(value) => handleFormChange('entity', value)} />
-        <SelectField label="Department" value={formState.department} options={departmentOptions} onChange={(value) => handleFormChange('department', value)} />
-        <SelectField label="Location" value={formState.location} options={locationOptions} onChange={(value) => handleFormChange('location', value)} />
-        <SelectField label="Employment Type" value={formState.type} options={typeOptions} onChange={(value) => handleFormChange('type', value)} />
-        <SelectField label="Grade" value={formState.grade} options={gradeOptions} onChange={(value) => handleFormChange('grade', value)} />
-        <Field label="Reporting Manager" value={formState.manager} onChange={(value) => handleFormChange('manager', value)} />
-        {modal.type === 'create' && <Field label="Join Date" type="date" value={formState.joinDate} onChange={(value) => handleFormChange('joinDate', value)} />}
+        {modal?.type === 'create' && <Field label="Employee Code" value={formState.code} onChange={(value) => setFormState((c) => ({ ...c, code: value }))} />}
+        <Field label="Employee Name" value={formState.name} onChange={(value) => setFormState((c) => ({ ...c, name: value }))} />
+        <Field label="Email" value={formState.email} onChange={(value) => setFormState((c) => ({ ...c, email: value }))} />
+        <Field label="Phone" value={formState.phone} onChange={(value) => setFormState((c) => ({ ...c, phone: value }))} />
+        <SelectField label="Role / Designation" value={formState.role} options={roleOptions} onChange={(value) => setFormState((c) => ({ ...c, role: value }))} />
+        <SelectField label="Legal Entity" value={formState.entity} options={entityOptions} onChange={(value) => setFormState((c) => ({ ...c, entity: value }))} />
+        <SelectField label="Department" value={formState.department} options={departmentOptions} onChange={(value) => setFormState((c) => ({ ...c, department: value }))} />
+        <SelectField label="Location" value={formState.location} options={locationOptions} onChange={(value) => setFormState((c) => ({ ...c, location: value }))} />
+        <SelectField label="Employment Type" value={formState.type} options={typeOptions} onChange={(value) => setFormState((c) => ({ ...c, type: value }))} />
+        <SelectField label="Grade Band" value={formState.grade} options={gradeOptions} onChange={(value) => setFormState((c) => ({ ...c, grade: value }))} />
+        <Field label="Reporting Manager" value={formState.manager} onChange={(value) => setFormState((c) => ({ ...c, manager: value }))} />
+        {modal?.type === 'create' && <Field label="Join Date" type="date" value={formState.joinDate} onChange={(value) => setFormState((c) => ({ ...c, joinDate: value }))} />}
       </div>
     );
   }
 
   function renderModalBody() {
-    if (modal.type === 'create') return renderEditForm();
+    if (modal?.type === 'create') return renderEditForm();
     if (!selectedEmployee) return null;
-    if (modal.type === 'edit') return renderEditForm();
-    if (modal.type === 'status') {
-      return <SelectField label="Employee Status" value={formState.status} options={statusOptions} onChange={(value) => handleFormChange('status', value)} />;
+    if (modal?.type === 'edit') return renderEditForm();
+    if (modal?.type === 'status') {
+      return <SelectField label="Employee Status" value={formState.status} options={statusOptions} onChange={(value) => setFormState((c) => ({ ...c, status: value }))} />;
     }
-    if (modal.type === 'manager') {
-      return <Field label="Reporting Manager" value={formState.manager} onChange={(value) => handleFormChange('manager', value)} />;
+    if (modal?.type === 'manager') {
+      return <Field label="Reporting Manager" value={formState.manager} onChange={(value) => setFormState((c) => ({ ...c, manager: value }))} />;
     }
-    if (modal.type === 'transfer') {
+    if (modal?.type === 'transfer') {
       return (
         <div className="form-grid">
-          <SelectField label="Department" value={formState.department} options={departmentOptions} onChange={(value) => handleFormChange('department', value)} />
-          <SelectField label="Location" value={formState.location} options={locationOptions} onChange={(value) => handleFormChange('location', value)} />
-          <Field label="Role" value={formState.role} onChange={(value) => handleFormChange('role', value)} />
-          <SelectField label="Grade" value={formState.grade} options={gradeOptions} onChange={(value) => handleFormChange('grade', value)} />
+          <SelectField label="Department" value={formState.department} options={departmentOptions} onChange={(value) => setFormState((c) => ({ ...c, department: value }))} />
+          <SelectField label="Location" value={formState.location} options={locationOptions} onChange={(value) => setFormState((c) => ({ ...c, location: value }))} />
+          <SelectField label="Role / Designation" value={formState.role} options={roleOptions} onChange={(value) => setFormState((c) => ({ ...c, role: value }))} />
+          <SelectField label="Grade" value={formState.grade} options={gradeOptions} onChange={(value) => setFormState((c) => ({ ...c, grade: value }))} />
         </div>
       );
     }
-    if (modal.type === 'upload') {
+    if (modal?.type === 'upload') {
       return (
         <div className="form-grid single">
-          <SelectField label="Document Type" value={formState.documentType || 'Address Proof'} options={['Address Proof', 'PAN Card', 'Aadhaar', 'Employment Contract', 'Education Certificate']} onChange={(value) => handleFormChange('documentType', value)} />
-          <Field label="Upload Note" value={formState.uploadNote || ''} onChange={(value) => handleFormChange('uploadNote', value)} placeholder="Example: Signed copy received" />
+          <SelectField label="Document Type" value={formState.documentType || 'Address Proof'} options={['Address Proof', 'PAN Card', 'Aadhaar', 'Employment Contract', 'Education Certificate']} onChange={(value) => setFormState((c) => ({ ...c, documentType: value }))} />
+          <Field label="Upload Note" value={formState.uploadNote || ''} onChange={(value) => setFormState((c) => ({ ...c, uploadNote: value }))} placeholder="Example: Signed copy received" />
         </div>
       );
     }
-    if (modal.type === 'audit') {
+    if (modal?.type === 'audit') {
       return (
         <div className="audit-list">
           {auditItems.length === 0 && <span><strong>No audit entries yet</strong> Changes made through this screen will appear here.</span>}
@@ -295,7 +393,7 @@ export default function AdminPage() {
         </div>
       );
     }
-    if (modal.type === 'deactivate') {
+    if (modal?.type === 'deactivate') {
       return (
         <div className="danger-copy">
           <ShieldAlert size={28} />
@@ -303,17 +401,126 @@ export default function AdminPage() {
         </div>
       );
     }
+    if (modal?.type === 'invite_sent') {
+      const details = modal.inviteDetails || {};
+      const targetEmail = details.sentToEmail || modal.employee?.email || '';
+      const targetPhone = details.sentToPhone || modal.employee?.phone || '+91 98765 43210';
+      const onboardingUrl = details.loginUrl || (typeof window !== 'undefined' ? `${window.location.origin}/onboard?email=${encodeURIComponent(targetEmail)}&code=${modal.employee?.code}` : '');
+      const tempPass = details.tempPassword || 'Hrms#982143';
+      const otpCode = details.otpCode || '849201';
+
+      return (
+        <div className="invite-sent-panel">
+          <div className="invite-hero-banner">
+            <CheckCircle2 size={36} className="invite-check-icon" />
+            <div>
+              <h3>Invitation Dispatched to {modal.employee?.name}</h3>
+              <p>HRMS credentials & onboarding instructions sent via Email and SMS.</p>
+            </div>
+          </div>
+
+          <div className="invite-channels">
+            <div className="channel-pill">
+              <Mail size={15} />
+              <span>Email: <strong>{targetEmail}</strong></span>
+            </div>
+            <div className="channel-pill">
+              <Smartphone size={15} />
+              <span>SMS: <strong>{targetPhone}</strong></span>
+            </div>
+          </div>
+
+          <div className="invite-box">
+            <div className="invite-group">
+              <label>HRMS Login & Account Setup Link</label>
+              <div className="input-btn-row">
+                <input className="input" readOnly value={onboardingUrl} />
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(onboardingUrl);
+                    setToast('Onboarding link copied!');
+                  }}
+                >
+                  <Copy size={14} /> Copy Link
+                </button>
+              </div>
+            </div>
+
+            <div className="invite-creds-grid">
+              <div className="invite-group">
+                <label><KeyRound size={13} /> Temporary Password</label>
+                <div className="input-btn-row">
+                  <input className="input" readOnly value={tempPass} />
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(tempPass);
+                      setToast('Temporary password copied!');
+                    }}
+                  >
+                    <Copy size={14} /> Copy
+                  </button>
+                </div>
+              </div>
+
+              <div className="invite-group">
+                <label><Smartphone size={13} /> Verification OTP Code</label>
+                <div className="input-btn-row">
+                  <input className="input" readOnly value={otpCode} />
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(otpCode);
+                      setToast('OTP code copied!');
+                    }}
+                  >
+                    <Copy size={14} /> Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="invite-instructions">
+              <strong>Employee Onboarding Steps:</strong>
+              <ol>
+                <li>Click the HRMS onboarding link.</li>
+                <li>Verify Email/Mobile with OTP or Temporary Password.</li>
+                <li>Create secure permanent password.</li>
+                <li>Log directly into HRMS.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="invite-test-cta">
+            <button
+              className="btn btn-success"
+              type="button"
+              onClick={() => window.open(onboardingUrl, '_blank')}
+            >
+              <ExternalLink size={16} /> Open Employee Onboarding Link
+            </button>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 
   function renderModalFooter() {
-    if (modal.type === 'create') {
-      return <button className="btn btn-primary" type="button" onClick={createEmployeeRecord}>Create Employee</button>;
+    if (modal?.type === 'create') {
+      return <button className="btn btn-primary" type="button" onClick={createEmployeeRecord}><Send size={16} />Send Invite</button>;
     }
-    if (!selectedEmployee || modal.type === 'audit') {
+    if (modal?.type === 'invite_sent') {
+      return <button className="btn btn-primary" type="button" onClick={closeModal}>Done</button>;
+    }
+    if (!selectedEmployee || modal?.type === 'audit') {
       return <button className="btn btn-secondary" type="button" onClick={closeModal}>Close</button>;
     }
-    if (modal.type === 'edit') {
+    if (modal?.type === 'edit') {
       return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => apiUpdateEmployee(selectedEmployee.code, {
         name: formState.name,
         email: formState.email,
@@ -327,19 +534,19 @@ export default function AdminPage() {
         manager: formState.manager
       }), `Updated ${selectedEmployee.code}.`)}>Save Employee</button>;
     }
-    if (modal.type === 'status') {
+    if (modal?.type === 'status') {
       return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeStatus(selectedEmployee.code, formState.status), `Status updated for ${selectedEmployee.code}.`)}>Update Status</button>;
     }
-    if (modal.type === 'manager') {
+    if (modal?.type === 'manager') {
       return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeManager(selectedEmployee.code, formState.manager), `Manager updated for ${selectedEmployee.code}.`)}>Update Manager</button>;
     }
-    if (modal.type === 'transfer') {
+    if (modal?.type === 'transfer') {
       return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => transferEmployee(selectedEmployee.code, { department: formState.department, location: formState.location, role: formState.role, grade: formState.grade }), `Transfer details updated for ${selectedEmployee.code}.`)}>Save Change</button>;
     }
-    if (modal.type === 'upload') {
+    if (modal?.type === 'upload') {
       return <button className="btn btn-primary" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => recordDocumentNote(selectedEmployee.code, { documentType: formState.documentType || 'Document', uploadNote: formState.uploadNote }), `Document note added for ${selectedEmployee.code}.`)}>Record Upload</button>;
     }
-    if (modal.type === 'deactivate') {
+    if (modal?.type === 'deactivate') {
       return <button className="btn btn-danger" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeStatus(selectedEmployee.code, 'Inactive'), `${selectedEmployee.code} deactivated.`)}>Deactivate Employee</button>;
     }
     return null;
@@ -354,779 +561,211 @@ export default function AdminPage() {
       upload: 'Upload Documents',
       audit: 'Audit History',
       deactivate: 'Deactivate Employee',
-      create: 'Add Employee'
+      create: 'Add Employee & Send Invitation',
+      invite_sent: 'Employee Invitation Sent'
     };
-    return titles[modal?.type] || 'Employee Action';
+    return titles[modal?.type || ''] || 'Employee Action';
   }
 
-  const activeCount = employees.filter((employee) => statusLabel(employee.status) === 'Active').length;
-  const onLeaveCount = employees.filter((employee) => statusLabel(employee.status) === 'On Leave').length;
-  const departmentsCount = new Set(employees.map((employee) => employee.department)).size;
+  const activeCount = useMemo(() => employees.filter((emp) => statusLabel(emp.status) === 'Active').length, [employees]);
+  const onLeaveCount = useMemo(() => employees.filter((emp) => statusLabel(emp.status) === 'On Leave').length, [employees]);
+  const inactiveCount = useMemo(() => employees.filter((emp) => statusLabel(emp.status) === 'Inactive').length, [employees]);
 
   return (
     <AdminRouteGuard allowedRole="org_admin">
-    <main className="app-shell-with-nav" onClick={() => setOpenMenuCode(null)}>
-      <style>{`
-        :root {
-          --admin-primary: #2563eb;
-          --admin-primary-hover: #1d4ed8;
-          --admin-primary-10: #eff6ff;
-          --admin-border: #e5e7eb;
-          --admin-page: #f7f9fc;
-          --admin-text: #111827;
-          --admin-muted: #6b7280;
-          --admin-panel: #ffffff;
-          --admin-radius: 8px;
-          --admin-shadow: 0 2px 4px rgba(16, 24, 40, 0.08);
-        }
-
-        body {
-          margin: 0;
-          background: var(--admin-page);
-          color: var(--admin-text);
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-
-        * {
-          box-sizing: border-box;
-        }
-
-        button,
-        input,
-        select {
-          font: inherit;
-        }
-
-        h1,
-        h2,
-        p {
-          margin-top: 0;
-          letter-spacing: 0;
-        }
-
-        .employee-master-workspace {
-          min-width: 0;
-          padding: 20px;
-        }
-
-        .employee-master-shell {
-          display: grid;
-          gap: 16px;
-          max-width: 1480px;
-          margin: 0 auto;
-        }
-
-        .employee-master-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 20px;
-        }
-
-        .company-stat-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 10px;
-        }
-
-        .company-stat {
-          display: grid;
-          gap: 4px;
-          border: 1px solid var(--admin-border);
-          border-radius: 8px;
-          background: #fbfdff;
-          padding: 12px;
-        }
-
-        .company-stat span {
-          color: var(--admin-muted);
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .company-stat strong {
-          color: var(--admin-text);
-          font-size: 20px;
-          line-height: 1.2;
-        }
-
-        .employee-master-header h1 {
-          margin-bottom: 6px;
-          font-size: 30px;
-          line-height: 1.2;
-        }
-
-        .employee-master-header p,
-        .panel-copy,
-        .employee-subtext {
-          margin-bottom: 0;
-          color: var(--admin-muted);
-        }
-
-        .admin-actions,
-        .panel-tools,
-        .modal-actions {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 10px;
-        }
-
-        .btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          min-height: 36px;
-          border: 1px solid transparent;
-          border-radius: 6px;
-          padding: 0 14px;
-          color: inherit;
-          font-size: 13px;
-          font-weight: 800;
-          text-decoration: none;
-          cursor: pointer;
-        }
-
-        .btn-primary {
-          background: var(--admin-primary);
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: var(--admin-primary-hover);
-        }
-
-        .btn-secondary {
-          border-color: var(--admin-border);
-          background: white;
-          color: #374151;
-        }
-
-        .btn-danger {
-          background: #dc2626;
-          color: white;
-        }
-
-        .card {
-          border: 1px solid var(--admin-border);
-          border-radius: var(--admin-radius);
-          background: var(--admin-panel);
-          box-shadow: var(--admin-shadow);
-        }
-
-        .employee-master-card {
-          min-width: 0;
-          padding: 18px;
-        }
-
-        .panel-top {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 14px;
-        }
-
-        .panel-top h2 {
-          margin-bottom: 4px;
-          font-size: 19px;
-          line-height: 1.2;
-        }
-
-        .filter-strip {
-          display: grid;
-          grid-template-columns: minmax(260px, 1fr) repeat(4, minmax(130px, 180px)) auto;
-          gap: 10px;
-          margin-bottom: 14px;
-        }
-
-        .admin-search,
-        .form-field {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          min-height: 36px;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          background: white;
-          color: var(--admin-muted);
-          padding: 0 10px;
-        }
-
-        .form-field {
-          display: grid;
-          align-content: center;
-          gap: 4px;
-          min-height: 62px;
-          padding: 8px 10px;
-        }
-
-        .form-field > span {
-          color: var(--admin-muted);
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .admin-search input,
-        .form-field input {
-          min-width: 0;
-          width: 100%;
-          border: 0;
-          background: transparent;
-          color: #374151;
-          outline: 0;
-        }
-
-        .admin-select {
-          min-width: 0;
-        }
-
-        .form-field .dropdown-select-trigger {
-          min-height: 36px;
-          border: 0;
-          background: transparent;
-          padding: 0;
-        }
-
-        .form-field .dropdown-select-trigger:hover,
-        .form-field .dropdown-select-trigger:focus,
-        .form-field .dropdown-select-trigger[aria-expanded="true"] {
-          background: transparent;
-          box-shadow: none;
-        }
-
-        .icon-btn {
-          display: inline-grid;
-          place-items: center;
-          width: 34px;
-          height: 34px;
-          border: 1px solid var(--admin-border);
-          border-radius: 6px;
-          background: white;
-          color: #374151;
-          cursor: pointer;
-        }
-
-        .employee-table-wrap {
-          overflow-x: auto;
-          border: 1px solid var(--admin-border);
-          border-radius: 8px;
-        }
-
-        .employee-table {
-          width: 100%;
-          min-width: 1040px;
-          border-collapse: collapse;
-        }
-
-        .employee-table th,
-        .employee-table td {
-          border-bottom: 1px solid var(--admin-border);
-          padding: 13px 14px;
-          text-align: left;
-          vertical-align: top;
-          white-space: nowrap;
-        }
-
-        .employee-table th {
-          background: #f8fafc;
-          color: #374151;
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .employee-table tr:last-child td {
-          border-bottom: 0;
-        }
-
-        .employee-name {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 230px;
-        }
-
-        .avatar {
-          display: grid;
-          flex: 0 0 auto;
-          place-items: center;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: var(--admin-primary-10);
-          color: var(--admin-primary);
-          font-weight: 900;
-        }
-
-        .employee-name strong {
-          display: block;
-          color: var(--admin-text);
-          font-size: 14px;
-        }
-
-        .employee-subtext {
-          display: block;
-          font-size: 12px;
-        }
-
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          min-height: 24px;
-          border-radius: 999px;
-          padding: 0 10px;
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .badge-success {
-          background: #dcfce7;
-          color: #15803d;
-        }
-
-        .badge-warning {
-          background: #ffedd5;
-          color: #c2410c;
-        }
-
-        .badge-neutral {
-          background: #e5e7eb;
-          color: #374151;
-        }
-
-        .actions-cell {
-          width: 70px;
-        }
-
-        .row-menu {
-          position: fixed;
-          z-index: 30;
-          display: grid;
-          width: 240px;
-          border: 1px solid var(--admin-border);
-          border-radius: 8px;
-          background: white;
-          box-shadow: 0 18px 32px rgba(16, 24, 40, 0.16);
-          padding: 6px;
-        }
-
-        .row-menu button {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-height: 34px;
-          border: 0;
-          border-radius: 6px;
-          background: transparent;
-          color: #374151;
-          padding: 0 10px;
-          text-align: left;
-          cursor: pointer;
-        }
-
-        .row-menu a {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-height: 34px;
-          border-radius: 6px;
-          color: #374151;
-          padding: 0 10px;
-          text-align: left;
-          text-decoration: none;
-        }
-
-        .row-menu button:hover,
-        .row-menu a:hover {
-          background: var(--admin-primary-10);
-          color: var(--admin-primary);
-        }
-
-        .row-menu .danger-action {
-          margin-top: 6px;
-          border-top: 1px solid var(--admin-border);
-          border-radius: 0 0 6px 6px;
-          color: #dc2626;
-          padding-top: 8px;
-        }
-
-        .modal-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 50;
-          display: grid;
-          place-items: center;
-          background: rgba(17, 24, 39, 0.42);
-          padding: 20px;
-        }
-
-        .modal-panel {
-          display: grid;
-          width: min(720px, 100%);
-          max-height: min(720px, calc(100vh - 40px));
-          overflow: auto;
-          border-radius: 8px;
-          background: white;
-          box-shadow: 0 24px 60px rgba(16, 24, 40, 0.2);
-        }
-
-        .modal-header,
-        .modal-footer {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 16px;
-          padding: 16px;
-        }
-
-        .modal-header {
-          border-bottom: 1px solid var(--admin-border);
-        }
-
-        .modal-header h2 {
-          margin-bottom: 4px;
-          font-size: 20px;
-        }
-
-        .modal-body {
-          padding: 16px;
-        }
-
-        .modal-footer {
-          border-top: 1px solid var(--admin-border);
-          justify-content: flex-end;
-        }
-
-        .detail-grid,
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
-        }
-
-        .form-grid.single {
-          grid-template-columns: 1fr;
-        }
-
-        .detail-field {
-          display: grid;
-          gap: 4px;
-          border: 1px solid var(--admin-border);
-          border-radius: 6px;
-          background: #fbfdff;
-          padding: 10px;
-        }
-
-        .detail-field span {
-          color: var(--admin-muted);
-          font-size: 12px;
-          font-weight: 800;
-          text-transform: capitalize;
-        }
-
-        .detail-field strong {
-          overflow-wrap: anywhere;
-        }
-
-        .audit-list {
-          display: grid;
-          gap: 8px;
-        }
-
-        .audit-list span,
-        .danger-copy {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-height: 42px;
-          border: 1px solid var(--admin-border);
-          border-radius: 6px;
-          background: #fbfdff;
-          padding: 10px;
-        }
-
-        .danger-copy {
-          align-items: flex-start;
-          background: #fef2f2;
-          color: #991b1b;
-        }
-
-        .danger-copy p {
-          margin-bottom: 0;
-        }
-
-        .toast {
-          position: fixed;
-          right: 18px;
-          bottom: 18px;
-          z-index: 70;
-          border: 1px solid #bbf7d0;
-          border-radius: 8px;
-          background: #f0fdf4;
-          color: #166534;
-          padding: 12px 14px;
-          font-weight: 800;
-          box-shadow: 0 12px 28px rgba(16, 24, 40, 0.12);
-        }
-
-        @media (max-width: 1280px) {
-          .filter-strip {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .company-stat-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 900px) {
-          .employee-master-workspace {
-            padding: 12px;
-          }
-
-          .employee-master-header,
-          .panel-top {
-            display: grid;
-          }
-
-          .admin-actions,
-          .panel-tools,
-          .modal-actions {
-            justify-content: stretch;
-          }
-
-          .filter-strip,
-          .detail-grid,
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .row-menu {
-            right: 12px;
-            left: auto !important;
-            width: min(240px, calc(100vw - 24px));
-          }
-
-          .modal-backdrop {
-            align-items: stretch;
-            padding: 12px;
-          }
-
-          .modal-panel {
-            width: 100%;
-            max-height: calc(100vh - 24px);
-          }
-        }
-      `}</style>
-      <OrgAdminSideNavigation activePath="/org-admin" />
-
-      <section className="employee-master-workspace">
-        <div className="employee-master-shell">
-          <header className="employee-master-header">
-            <div>
-              <Breadcrumbs
-                items={[
-                  { label: 'Organization Admin', href: '/org-admin' },
-                  { label: 'Dashboard' }
-                ]}
-              />
-              <h1>{activeCompany?.name || 'Company Workspace'}</h1>
-            </div>
-            <div className="admin-actions">
-              <button className="btn btn-secondary" type="button"><Upload size={16} />Bulk Upload</button>
-              <button className="btn btn-secondary" type="button"><Download size={16} />Export</button>
-              <button className="btn btn-primary" type="button" onClick={() => openModal('create')}><Plus size={16} />Add Employee</button>
-            </div>
-          </header>
-
-          <section className="company-stat-grid" aria-label="Selected company snapshot">
-            <div className="company-stat"><span>Total Employees</span><strong>{employees.length}</strong></div>
-            <div className="company-stat"><span>Active</span><strong>{activeCount}</strong></div>
-            <div className="company-stat"><span>On Leave</span><strong>{onLeaveCount}</strong></div>
-            <div className="company-stat"><span>Departments</span><strong>{departmentsCount}</strong></div>
-          </section>
-
-          <section className="card employee-master-card" id="employees">
-            <div className="panel-top">
+      <div style={{ width: '100%' }} onClick={() => openMenuCode && setOpenMenuCode(null)}>
+        <section className="employee-master-workspace">
+          <div className="employee-master-shell">
+            <header className="employee-master-header">
               <div>
-                <h2>Employee Master</h2>
+                <Breadcrumbs
+                  items={[
+                    { label: 'Organization Admin', href: '/org-admin' },
+                    { label: 'Employee Master' }
+                  ]}
+                />
+                <h1>{activeCompany?.name || 'Company Workspace'}</h1>
               </div>
-              <div className="panel-tools">
-                <button className="btn btn-secondary" type="button"><UsersRound size={16} />{employees.length} Records</button>
+              <div className="admin-actions">
+                <button className="btn btn-secondary" type="button"><Upload size={16} />Bulk Upload</button>
+                <button className="btn btn-secondary" type="button"><Download size={16} />Export</button>
               </div>
-            </div>
-
-            <div className="filter-strip" aria-label="Employee filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={filters.search} onChange={(event) => handleFilterChange('search', event.target.value)} placeholder="Search by name, code, role or manager" />
-              </label>
-              <DropdownSelect
-                ariaLabel="Status"
-                className="admin-select"
-                value={filters.status}
-                placeholder="Status"
-                options={[
-                  { value: '', label: 'Status' },
-                  ...statusOptions.map((status) => ({ value: status === 'On Leave' ? 'OnLeave' : status, label: status }))
-                ]}
-                onChange={(value) => handleFilterChange('status', value)}
-              />
-              <DropdownSelect
-                ariaLabel="Department"
-                className="admin-select"
-                value={filters.department}
-                placeholder="Department"
-                options={[{ value: '', label: 'Department' }, ...departmentOptions]}
-                onChange={(value) => handleFilterChange('department', value)}
-              />
-              <DropdownSelect
-                ariaLabel="Location"
-                className="admin-select"
-                value={filters.location}
-                placeholder="Location"
-                options={[{ value: '', label: 'Location' }, ...locationOptions]}
-                onChange={(value) => handleFilterChange('location', value)}
-              />
-              <DropdownSelect
-                ariaLabel="Employee type"
-                className="admin-select"
-                value={filters.type}
-                placeholder="Type"
-                options={[{ value: '', label: 'Type' }, ...typeOptions]}
-                onChange={(value) => handleFilterChange('type', value)}
-              />
-              <button className="icon-btn" type="button" aria-label="Clear filters" title="Clear filters" onClick={clearFilters}><Filter size={16} /></button>
-            </div>
-
-            <div className="employee-table-wrap">
-              {isLoading && <div className="detail-field"><strong>Loading employee records...</strong></div>}
-              {error && <div className="danger-copy"><ShieldAlert size={22} /><p>{error}</p></div>}
-              {!isLoading && !error && employees.length === 0 && <div className="detail-field"><strong>No employees found.</strong></div>}
-              <table className="employee-table">
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Legal Entity</th>
-                    <th>Department</th>
-                    <th>Location</th>
-                    <th>Employment</th>
-                    <th>Manager</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((employee) => (
-                    <tr key={employee.code}>
-                      <td>
-                        <div className="employee-name">
-                          <span className="avatar">{employee.name.slice(0, 1)}</span>
-                          <div>
-                            <strong>{employee.name}</strong>
-                            <span className="employee-subtext">{employee.code} | {employee.role}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{employee.entity}</td>
-                      <td>{employee.department}</td>
-                      <td>{employee.location}</td>
-                      <td>
-                        <strong>{employee.type}</strong>
-                        <span className="employee-subtext">{employee.grade} | Joined {formatDate(employee.joinDate)}</span>
-                      </td>
-                      <td>{employee.manager}</td>
-                      <td><span className={`badge ${statusClass(employee.status)}`}>{statusLabel(employee.status)}</span></td>
-                      <td className="actions-cell" onClick={(event) => event.stopPropagation()}>
-                        <button
-                          className="icon-btn"
-                          type="button"
-                          aria-expanded={openMenuCode === employee.code}
-                          aria-label={`Open actions for ${employee.name}`}
-                          onClick={(event) => toggleRowMenu(event, employee.code)}
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      {openMenuCode && (
-        <div
-          className="row-menu"
-          role="menu"
-          style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          {(() => {
-            const employee = employees.find((item) => item.code === openMenuCode);
-            if (!employee) return null;
-            return (
-              <>
-                <a href={`/org-admin/employees/${employee.code}`}><UserRound size={15} />View Profile</a>
-                <button type="button" onClick={() => openModal('edit', employee)}><Edit3 size={15} />Edit Employee</button>
-                <button type="button" onClick={() => openModal('status', employee)}><ToggleLeft size={15} />Change Status</button>
-                <button type="button" onClick={() => openModal('manager', employee)}><UsersRound size={15} />Update Reporting Manager</button>
-                <button type="button" onClick={() => openModal('transfer', employee)}><GitBranch size={15} />Transfer / Role Change</button>
-                <button type="button" onClick={() => openModal('upload', employee)}><FileUp size={15} />Upload Documents</button>
-                <button type="button" onClick={() => openModal('audit', employee)}><FileClock size={15} />View Audit History</button>
-                <button type="button" onClick={() => downloadEmployee(employee)}><FileDown size={15} />Download Employee Record</button>
-                <button className="danger-action" type="button" onClick={() => openModal('deactivate', employee)}><ShieldAlert size={15} />Deactivate Employee</button>
-              </>
-            );
-          })()}
-        </div>
-      )}
-
-      {modal && (selectedEmployee || modal.type === 'create') && (
-        <div className="modal-backdrop" role="presentation" onClick={closeModal}>
-          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="employee-action-title" onClick={(event) => event.stopPropagation()}>
-            <header className="modal-header">
-              <div>
-                <h2 id="employee-action-title">{modalTitle()}</h2>
-              </div>
-              <button className="icon-btn" type="button" aria-label="Close action modal" onClick={closeModal}><X size={16} /></button>
             </header>
-            <div className="modal-body">{renderModalBody()}</div>
-            <footer className="modal-footer">
-              <div className="modal-actions">
-                {modal.type !== 'audit' && <button className="btn btn-secondary" type="button" onClick={closeModal}>Cancel</button>}
-                {renderModalFooter()}
-              </div>
-            </footer>
-          </section>
-        </div>
-      )}
 
-      {toast && <button className="toast" type="button" onClick={() => setToast('')}>{toast}</button>}
-    </main>
+            {isLoading ? (
+              <SkeletonTable rows={6} columns={8} />
+            ) : (
+              <>
+
+                <section className="card employee-master-card" id="main-content">
+                  <div className="panel-top">
+                    <div>
+                      <h2>Employee Master</h2>
+                      <p className="panel-copy">Manage employee records, organizational roles and status.</p>
+                    </div>
+                    <div className="panel-tools">
+                      <button className="btn btn-secondary" type="button"><UsersRound size={16} />{filteredEmployees.length} Records</button>
+                    </div>
+                  </div>
+
+                  <div className="filter-strip" aria-label="Employee filters">
+                    <label className="admin-search">
+                      <Search size={16} />
+                      <input value={filters.search} onChange={(event) => handleFilterChange('search', event.target.value)} placeholder="Search by name, code, role or manager" />
+                    </label>
+                    <DropdownSelect
+                      ariaLabel="Status"
+                      className="admin-select"
+                      value={filters.status}
+                      placeholder="Status"
+                      options={[
+                        { value: '', label: 'Status' },
+                        ...statusOptions.map((status) => ({ value: status === 'On Leave' ? 'OnLeave' : status, label: status }))
+                      ]}
+                      onChange={(value) => handleFilterChange('status', value)}
+                    />
+                    <DropdownSelect
+                      ariaLabel="Department"
+                      className="admin-select"
+                      value={filters.department}
+                      placeholder="Department"
+                      options={[{ value: '', label: 'Department' }, ...departmentOptions]}
+                      onChange={(value) => handleFilterChange('department', value)}
+                    />
+                    <DropdownSelect
+                      ariaLabel="Location"
+                      className="admin-select"
+                      value={filters.location}
+                      placeholder="Location"
+                      options={[{ value: '', label: 'Location' }, ...locationOptions]}
+                      onChange={(value) => handleFilterChange('location', value)}
+                    />
+                    <DropdownSelect
+                      ariaLabel="Employee type"
+                      className="admin-select"
+                      value={filters.type}
+                      placeholder="Type"
+                      options={[{ value: '', label: 'Type' }, ...typeOptions]}
+                      onChange={(value) => handleFilterChange('type', value)}
+                    />
+                    <button className="icon-btn" type="button" aria-label="Clear filters" title="Clear filters" onClick={clearFilters}><Filter size={16} /></button>
+                  </div>
+
+                  <div className="employee-table-wrap">
+                    {error && <div className="danger-copy"><ShieldAlert size={22} /><p>{error}</p></div>}
+                    {!error && filteredEmployees.length === 0 && <div className="detail-field"><strong>No employees found matching filters.</strong></div>}
+                    <table className="employee-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Legal Entity</th>
+                      <th>Department</th>
+                      <th>Location</th>
+                      <th>Employment</th>
+                      <th>Manager</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEmployees.map((employee) => (
+                      <tr key={employee.code}>
+                        <td>
+                          <div className="employee-name">
+                            <span className="avatar">{employee.name.slice(0, 1)}</span>
+                            <div>
+                              <strong>{employee.name}</strong>
+                              <span className="employee-subtext">{employee.code} | {employee.role}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{employee.entity}</td>
+                        <td>{employee.department}</td>
+                        <td>{employee.location}</td>
+                        <td>
+                          <strong>{employee.type}</strong>
+                          <span className="employee-subtext">{employee.grade} | Joined {formatDate(employee.joinDate)}</span>
+                        </td>
+                        <td>{employee.manager}</td>
+                        <td><span className={`badge ${statusClass(employee.status)}`}>{statusLabel(employee.status)}</span></td>
+                        <td className="actions-cell" onClick={(event) => event.stopPropagation()}>
+                          <button
+                            className="icon-btn"
+                            type="button"
+                            aria-expanded={openMenuCode === employee.code}
+                            aria-label={`Open actions for ${employee.name}`}
+                            onClick={() => toggleRowMenu(employee.code)}
+                          >
+                            <MoreHorizontal size={16} />
+                          </button>
+
+                          {openMenuCode === employee.code && (
+                            <div className="row-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+                              <a href={`/org-admin/employees/${employee.code}`}><UserRound size={15} />View Profile</a>
+                              <button type="button" onClick={() => openModal('edit', employee)}><Edit3 size={15} />Edit Employee</button>
+                              <button type="button" onClick={() => resendInviteRecord(employee)}><Send size={15} />Resend Invitation</button>
+                              <button type="button" onClick={() => openModal('status', employee)}><ToggleLeft size={15} />Change Status</button>
+                              <button type="button" onClick={() => openModal('manager', employee)}><UsersRound size={15} />Update Reporting Manager</button>
+                              <button type="button" onClick={() => openModal('transfer', employee)}><GitBranch size={15} />Transfer / Role Change</button>
+                              <button type="button" onClick={() => openModal('upload', employee)}><FileUp size={15} />Upload Documents</button>
+                              <button type="button" onClick={() => openModal('audit', employee)}><FileClock size={15} />View Audit History</button>
+                              <button type="button" onClick={() => downloadEmployee(employee)}><FileDown size={15} />Download Employee Record</button>
+                              <button className="danger-action" type="button" onClick={() => openModal('deactivate', employee)}><ShieldAlert size={15} />Deactivate Employee</button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+    </section>
+
+        {/* EMPLOYEE ACTION MODAL */}
+        {modal && (selectedEmployee || modal.type === 'create') && (
+          <div className="modal-backdrop" role="presentation" onClick={closeModal}>
+            <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="employee-action-title" onClick={(event) => event.stopPropagation()}>
+              <header className="modal-header">
+                <div>
+                  <h2 id="employee-action-title">{modalTitle()}</h2>
+                </div>
+                <button className="icon-btn" type="button" aria-label="Close action modal" onClick={closeModal}><X size={16} /></button>
+              </header>
+              <div className="modal-body">{renderModalBody()}</div>
+              <footer className="modal-footer">
+                <div className="modal-actions">
+                  {modal.type !== 'audit' && <button className="btn btn-secondary" type="button" onClick={closeModal}>Cancel</button>}
+                  {renderModalFooter()}
+                </div>
+              </footer>
+            </section>
+          </div>
+        )}
+
+        {toast && <button className="toast" type="button" onClick={() => setToast('')}>{toast}</button>}
+      </div>
     </AdminRouteGuard>
   );
 }
 
 function Field({ label, value = '', onChange, placeholder = '', type = 'text' }) {
   return (
-    <label className="form-field">
-      <span>{label}</span>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
-    </label>
+    <div className="form-field-wrap">
+      <span className="form-field-label">{label}</span>
+      <input className="input" type={type} value={value || ''} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+    </div>
   );
 }
 
 function SelectField({ label, value = '', options, onChange }) {
   return (
-    <label className="form-field">
-      <span>{label}</span>
-      <DropdownSelect value={value} options={options} onChange={onChange} ariaLabel={label} />
-    </label>
+    <div className="form-field-wrap">
+      <span className="form-field-label">{label}</span>
+      <DropdownSelect value={value || ''} options={options} onChange={onChange} ariaLabel={label} />
+    </div>
   );
 }

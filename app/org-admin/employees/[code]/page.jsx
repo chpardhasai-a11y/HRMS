@@ -20,7 +20,6 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import AdminRouteGuard from '../../../components/AdminRouteGuard';
 import Breadcrumbs from '../../../components/Breadcrumbs';
-import OrgAdminSideNavigation from '../../../components/OrgAdminSideNavigation';
 import { formatDate, getEmployee, statusLabel } from '../../../lib/hrmsApi';
 
 function employeeStatusClass(status) {
@@ -115,7 +114,7 @@ export default function AdminEmployeeProfilePage() {
 
   return (
     <AdminRouteGuard allowedRole="org_admin">
-    <main className="app-shell-with-nav">
+    <div style={{ width: '100%' }}>
       <style>{`
         .admin-employee-record-page {
           min-width: 0;
@@ -442,9 +441,8 @@ export default function AdminEmployeeProfilePage() {
           }
         }
       `}</style>
-      <OrgAdminSideNavigation activePath="/org-admin" />
 
-      <section className="admin-employee-record-page">
+      <section className="admin-employee-record-page" style={{ width: '100%' }}>
         <div className="admin-employee-record-shell">
           <Breadcrumbs
             items={[
@@ -544,7 +542,7 @@ export default function AdminEmployeeProfilePage() {
           )}
         </div>
       </section>
-    </main>
+    </div>
     </AdminRouteGuard>
   );
 }

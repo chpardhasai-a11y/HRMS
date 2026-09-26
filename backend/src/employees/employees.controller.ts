@@ -10,6 +10,7 @@ import {
   TransferEmployeeDto,
   UpdateEmployeeDto,
   UpdateManagerDto,
+  UpdateOnboardingDto,
   UpdateStatusDto
 } from './dto';
 import { EmployeesService } from './employees.service';
@@ -32,10 +33,22 @@ export class EmployeesController {
     return this.employees.findAll(user, { search, status, department, location, type });
   }
 
+  @Get('onboarding/queue')
+  @Roles(UserRole.org_admin)
+  getOnboardingQueue(@CurrentUser() user: RequestUser) {
+    return this.employees.getOnboardingQueue(user);
+  }
+
   @Post()
   @Roles(UserRole.org_admin)
   create(@Body() dto: CreateEmployeeDto, @CurrentUser() user: RequestUser) {
     return this.employees.create(dto, user);
+  }
+
+  @Post(':code/resend-invite')
+  @Roles(UserRole.org_admin)
+  resendInvite(@Param('code') code: string, @CurrentUser() user: RequestUser) {
+    return this.employees.resendInvite(code, user);
   }
 
   @Get(':code')
@@ -45,7 +58,7 @@ export class EmployeesController {
   }
 
   @Patch(':code')
-  @Roles(UserRole.org_admin)
+  @Roles(UserRole.employee, UserRole.org_admin)
   update(@Param('code') code: string, @Body() dto: UpdateEmployeeDto, @CurrentUser() user: RequestUser) {
     return this.employees.update(code, dto, user);
   }
@@ -72,6 +85,12 @@ export class EmployeesController {
   @Roles(UserRole.org_admin)
   recordDocument(@Param('code') code: string, @Body() dto: DocumentNoteDto, @CurrentUser() user: RequestUser) {
     return this.employees.recordDocumentNote(code, dto, user);
+  }
+
+  @Patch(':code/onboarding')
+  @Roles(UserRole.org_admin)
+  updateOnboardingStage(@Param('code') code: string, @Body() dto: UpdateOnboardingDto, @CurrentUser() user: RequestUser) {
+    return this.employees.updateOnboardingStage(code, dto, user);
   }
 
   @Get(':code/audit')

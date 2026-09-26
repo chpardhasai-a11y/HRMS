@@ -14,7 +14,6 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import OrgAdminSideNavigation from '../../../components/OrgAdminSideNavigation';
 import DropdownSelect from '../../../components/DropdownSelect';
 import {
   createBusinessUnit,
@@ -171,9 +170,7 @@ export default function BusinessUnitsMasterPage() {
   }
 
   return (
-    <div className="app-shell-with-nav">
-      <OrgAdminSideNavigation activePath="/org-admin/masters/business-units" />
-
+    <div style={{ width: '100%' }}>
       <main className="admin-page-main" style={{ padding: '24px 32px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {/* Header */}
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>

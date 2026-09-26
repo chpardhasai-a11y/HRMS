@@ -19,6 +19,15 @@ import { DepartmentsModule } from './org-masters/departments/departments.module'
 import { TeamsModule } from './org-masters/teams/teams.module';
 import { LocationsModule } from './org-masters/locations/locations.module';
 import { CostCentersModule } from './org-masters/cost-centers/cost-centers.module';
+import { JobFamiliesModule } from './org-masters/job-families/job-families.module';
+import { GradeBandsModule } from './org-masters/grade-bands/grade-bands.module';
+import { JobTitlesModule } from './org-masters/job-titles/job-titles.module';
+import { PayComponentsModule } from './org-masters/pay-components/pay-components.module';
+import { EmploymentTypesModule } from './org-masters/employment-types/employment-types.module';
+import { WorkModesModule } from './org-masters/work-modes/work-modes.module';
+import { WorkShiftsModule } from './org-masters/work-shifts/work-shifts.module';
+import { HolidayCalendarsModule } from './org-masters/holiday-calendars/holiday-calendars.module';
+import { ApprovalsModule } from './approvals/approvals.module';
 
 @Module({
   imports: [
@@ -38,6 +47,15 @@ import { CostCentersModule } from './org-masters/cost-centers/cost-centers.modul
     TeamsModule,
     LocationsModule,
     CostCentersModule,
+    JobFamiliesModule,
+    GradeBandsModule,
+    JobTitlesModule,
+    PayComponentsModule,
+    EmploymentTypesModule,
+    WorkModesModule,
+    WorkShiftsModule,
+    HolidayCalendarsModule,
+    ApprovalsModule,
     LookupsModule,
     AuditModule,
     HealthModule

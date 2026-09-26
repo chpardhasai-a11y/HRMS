@@ -45,6 +45,15 @@ model Company {
   teams          Team[]
   locations      Location[]
   costCenters    CostCenter[]
+  approvalRequests ApprovalRequest[]
+  jobFamilies    JobFamily[]
+  gradeBands     GradeBand[]
+  jobTitles      JobTitle[]
+  payComponents  PayComponent[]
+  employmentTypes EmploymentType[]
+  workModes       WorkMode[]
+  workShifts      WorkShift[]
+  holidayCalendars HolidayCalendar[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 }
@@ -364,4 +373,183 @@ model CostCenter {
   @@index([companyId])
 }
 
+model ApprovalRequest {
+  id            String    @id @default(cuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeCode  String
+  employeeName  String
+  department    String
+  role          String
+  category      String
+  status        String    @default("Pending")
+  changes       Json
+  notes         String?
+  rejectionNote String?
+  actionDate    DateTime?
+  submittedAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
+  @@index([companyId])
+  @@index([employeeCode])
+  @@index([status])
+}
+
+model JobFamily {
+  id          String     @id @default(cuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  stream      String     @default("Individual Contributor")
+  description String?
+  isActive    Boolean    @default(true)
+  jobTitles   JobTitle[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model GradeBand {
+  id          String     @id @default(cuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  levelRank   Int        @default(1)
+  minSalary   Float      @default(0)
+  maxSalary   Float      @default(0)
+  currency    String     @default("INR")
+  description String?
+  isActive    Boolean    @default(true)
+  jobTitles   JobTitle[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model JobTitle {
+  id          String     @id @default(cuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  jobFamilyId String?
+  jobFamily   JobFamily? @relation(fields: [jobFamilyId], references: [id], onDelete: SetNull)
+  gradeBandId String?
+  gradeBand   GradeBand? @relation(fields: [gradeBandId], references: [id], onDelete: SetNull)
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model PayComponent {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code            String
+  name            String
+  type            String   @default("Earning")
+  calculationType String   @default("Fixed Amount")
+  value           Float    @default(0)
+  isTaxable       Boolean  @default(true)
+  isStatutory     Boolean  @default(false)
+  description     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model EmploymentType {
+  id               String   @id @default(cuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code             String
+  name             String
+  category         String   @default("Permanent")
+  noticePeriodDays Int      @default(30)
+  description      String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model WorkMode {
+  id                 String   @id @default(cuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code               String
+  name               String
+  allowedRemoteDays  Int      @default(0)
+  requiresGeofencing Boolean  @default(false)
+  description        String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model WorkShift {
+  id                 String   @id @default(cuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code               String
+  name               String
+  startTime          String   @default("09:00")
+  endTime            String   @default("18:00")
+  gracePeriodMinutes Int      @default(15)
+  halfDayHours       Float    @default(4.0)
+  breakDurationMins  Int      @default(60)
+  isFlexible         Boolean  @default(false)
+  isRotational       Boolean  @default(false)
+  description        String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model HolidayCalendar {
+  id                  String   @id @default(cuid())
+  companyId           String
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code                String
+  name                String
+  date                DateTime
+  type                String   @default("Mandatory")
+  applicableLocation String   @default("All Locations")
+  description         String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@unique([companyId, name, date])
+  @@index([companyId])
+}

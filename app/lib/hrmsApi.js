@@ -175,6 +175,12 @@ export function createEmployee(payload) {
   });
 }
 
+export function resendEmployeeInvite(code) {
+  return apiRequest(`/employees/${code}/resend-invite`, {
+    method: 'POST'
+  });
+}
+
 export function updateEmployee(code, updates) {
   return apiRequest(`/employees/${code}`, {
     method: 'PATCH',
@@ -214,6 +220,17 @@ export function getEmployeeAudit(code) {
   return apiRequest(`/employees/${code}/audit`);
 }
 
+export function getOnboardingQueue() {
+  return apiRequest('/employees/onboarding/queue');
+}
+
+export function updateOnboardingStage(code, payload) {
+  return apiRequest(`/employees/${code}/onboarding`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
 export function forgotPassword(email, audience = 'employee') {
   return request(`${API_BASE_URL}/auth/forgot-password`, {
     method: 'POST',
@@ -234,6 +251,37 @@ export function resetPassword(tokenValue, password) {
   }).then(async (response) => {
     const data = await parseJson(response, {});
     if (!response.ok) throw new Error(data.message || 'Unable to reset password.');
+    return data;
+  });
+}
+
+export function verifyInvite(email, otpOrTempPassword, companyId = null) {
+  const payload = { email, otpOrTempPassword };
+  if (companyId) payload.companyId = companyId;
+  return request(`${API_BASE_URL}/auth/verify-invite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(async (response) => {
+    const data = await parseJson(response, {});
+    if (!response.ok) throw new Error(data.message || 'Verification failed.');
+    return data;
+  });
+}
+
+export function setupEmployeeAccount(payload) {
+  return request(`${API_BASE_URL}/auth/setup-account`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(async (response) => {
+    const data = await parseJson(response, {});
+    if (!response.ok) throw new Error(data.message || 'Account setup failed.');
+    if (data.accessToken && data.user) {
+      storage()?.setItem(TOKEN_KEY, data.accessToken);
+      storage()?.setItem(USER_KEY, JSON.stringify(data.user));
+      storage()?.setItem(COMPANY_KEY, data.user.companyId);
+    }
     return data;
   });
 }
@@ -621,6 +669,313 @@ export function deleteCostCenter(id) {
   });
 }
 
+// Job Families
+export function getJobFamilies(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/job-families?${params.toString()}`);
+}
+
+export function createJobFamily(payload) {
+  return apiRequest('/org-masters/job-families', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateJobFamily(id, payload) {
+  return apiRequest(`/org-masters/job-families/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleJobFamilyStatus(id) {
+  return apiRequest(`/org-masters/job-families/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteJobFamily(id) {
+  return apiRequest(`/org-masters/job-families/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Grade Bands
+export function getGradeBands(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/grade-bands?${params.toString()}`);
+}
+
+export function createGradeBand(payload) {
+  return apiRequest('/org-masters/grade-bands', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateGradeBand(id, payload) {
+  return apiRequest(`/org-masters/grade-bands/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleGradeBandStatus(id) {
+  return apiRequest(`/org-masters/grade-bands/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteGradeBand(id) {
+  return apiRequest(`/org-masters/grade-bands/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Job Titles / Designations
+export function getJobTitles(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/job-titles?${params.toString()}`);
+}
+
+export function createJobTitle(payload) {
+  return apiRequest('/org-masters/job-titles', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateJobTitle(id, payload) {
+  return apiRequest(`/org-masters/job-titles/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleJobTitleStatus(id) {
+  return apiRequest(`/org-masters/job-titles/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteJobTitle(id) {
+  return apiRequest(`/org-masters/job-titles/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Pay Components
+export function getPayComponents(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.type) params.set('type', filters.type);
+  return apiRequest(`/org-masters/pay-components?${params.toString()}`);
+}
+
+export function createPayComponent(payload) {
+  return apiRequest('/org-masters/pay-components', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updatePayComponent(id, payload) {
+  return apiRequest(`/org-masters/pay-components/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function togglePayComponentStatus(id) {
+  return apiRequest(`/org-masters/pay-components/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deletePayComponent(id) {
+  return apiRequest(`/org-masters/pay-components/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Employment Types
+export function getEmploymentTypes(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/employment-types?${params.toString()}`);
+}
+
+export function createEmploymentType(payload) {
+  return apiRequest('/org-masters/employment-types', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateEmploymentType(id, payload) {
+  return apiRequest(`/org-masters/employment-types/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleEmploymentTypeStatus(id) {
+  return apiRequest(`/org-masters/employment-types/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteEmploymentType(id) {
+  return apiRequest(`/org-masters/employment-types/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Work Modes
+export function getWorkModes(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/work-modes?${params.toString()}`);
+}
+
+export function createWorkMode(payload) {
+  return apiRequest('/org-masters/work-modes', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateWorkMode(id, payload) {
+  return apiRequest(`/org-masters/work-modes/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleWorkModeStatus(id) {
+  return apiRequest(`/org-masters/work-modes/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteWorkMode(id) {
+  return apiRequest(`/org-masters/work-modes/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Work Shifts
+export function getWorkShifts(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  return apiRequest(`/org-masters/work-shifts?${params.toString()}`);
+}
+
+export function createWorkShift(payload) {
+  return apiRequest('/org-masters/work-shifts', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateWorkShift(id, payload) {
+  return apiRequest(`/org-masters/work-shifts/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleWorkShiftStatus(id) {
+  return apiRequest(`/org-masters/work-shifts/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteWorkShift(id) {
+  return apiRequest(`/org-masters/work-shifts/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// Holiday Calendars
+export function getHolidayCalendars(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.type) params.set('type', filters.type);
+  return apiRequest(`/org-masters/holiday-calendars?${params.toString()}`);
+}
+
+export function createHolidayCalendar(payload) {
+  return apiRequest('/org-masters/holiday-calendars', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateHolidayCalendar(id, payload) {
+  return apiRequest(`/org-masters/holiday-calendars/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleHolidayCalendarStatus(id) {
+  return apiRequest(`/org-masters/holiday-calendars/${id}/toggle-status`, {
+    method: 'PATCH'
+  });
+}
+
+export function deleteHolidayCalendar(id) {
+  return apiRequest(`/org-masters/holiday-calendars/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// ---------------------------------------------------------------------------
+// APPROVAL REQUESTS API
+// ---------------------------------------------------------------------------
+
+export function getApprovals(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.category) params.set('category', filters.category);
+  if (filters.employeeCode) params.set('employeeCode', filters.employeeCode);
+  const query = params.toString();
+  return apiRequest(`/approvals${query ? `?${query}` : ''}`);
+}
+
+export function createApprovalRequest(payload) {
+  return apiRequest('/approvals', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function approveRequest(id) {
+  return apiRequest(`/approvals/${id}/approve`, {
+    method: 'PATCH'
+  });
+}
+
+export function rejectRequest(id, rejectionNote) {
+  return apiRequest(`/approvals/${id}/reject`, {
+    method: 'PATCH',
+    body: JSON.stringify({ rejectionNote })
+  });
+}
 
 async function request(url, options) {
   try {

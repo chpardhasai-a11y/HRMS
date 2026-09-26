@@ -29,6 +29,7 @@ export default function DropdownSelect({
   const buttonRef = useRef(null);
   const searchInputRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [placement, setPlacement] = useState('bottom');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [internalValue, setInternalValue] = useState(value || '');
@@ -78,6 +79,16 @@ export default function DropdownSelect({
 
   function openMenu() {
     if (disabled) return;
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+        setPlacement('top');
+      } else {
+        setPlacement('bottom');
+      }
+    }
     const nextIndex = selectedIndex >= 0 ? selectedIndex : 0;
     setActiveIndex(nextIndex);
     setSearchQuery('');
@@ -152,7 +163,13 @@ export default function DropdownSelect({
       </button>
 
       {isOpen && (
-        <div className="dropdown-select-menu" id={`${id}-menu`} role="listbox" tabIndex={-1}>
+        <div
+          className={`dropdown-select-menu dropdown-select-menu-${placement}`}
+          id={`${id}-menu`}
+          role="listbox"
+          tabIndex={-1}
+          style={placement === 'top' ? { top: 'auto', bottom: 'calc(100% + 6px)' } : {}}
+        >
           <div className="dropdown-select-search" onClick={(e) => e.stopPropagation()}>
             <div className="dropdown-select-search-box">
               <Search className="search-icon" size={14} />

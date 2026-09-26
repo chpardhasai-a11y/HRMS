@@ -12,6 +12,7 @@ import {
 import HeroHeightSync from './components/HeroHeightSync';
 import ProfileSections from './components/ProfileSections';
 import SideNavigation from './components/SideNavigation';
+import { SkeletonProfile } from './components/SkeletonLoader';
 import { formatDate, getEmployee, statusLabel } from './lib/hrmsApi';
 
 const fallbackEmployee = {
@@ -142,65 +143,73 @@ export default function Home() {
       <SideNavigation activePath="/" />
       <section className="profile-page">
         <HeroHeightSync />
-        {loadState === 'offline' && (
-          <div className="profile-content card">
-            <strong>Using sample profile data until the HRMS API is available.</strong>
+        {loadState === 'loading' ? (
+          <div style={{ padding: 24 }}>
+            <SkeletonProfile />
           </div>
-        )}
-        <section className="profile-hero card">
-          <div className="profile-cover">
-            <div className="profile-identity">
-              <img src={employee.avatar} alt="" className="profile-avatar" />
-              <div>
-                <div className="profile-kicker">
-                  <h1>{employee.name}</h1>
-                  <span className="badge badge-info">WFH</span>
+        ) : (
+          <>
+            {loadState === 'offline' && (
+              <div className="profile-content card">
+                <strong>Using sample profile data until the HRMS API is available.</strong>
+              </div>
+            )}
+            <section className="profile-hero card">
+              <div className="profile-cover">
+                <div className="profile-identity">
+                  <img src={employee.avatar} alt="" className="profile-avatar" />
+                  <div>
+                    <div className="profile-kicker">
+                      <h1>{employee.name}</h1>
+                      <span className="badge badge-info">WFH</span>
+                    </div>
+                    <p><BriefcaseBusiness size={16} />{employee.role}</p>
+                  </div>
                 </div>
-                <p><BriefcaseBusiness size={16} />{employee.role}</p>
               </div>
-            </div>
-          </div>
 
-          <div className="profile-summary-row">
-            <div className="profile-contact-list">
-              {heroContacts.map(({ icon: Icon, label }) => (
-                <span key={label}><Icon size={17} />{label}</span>
-              ))}
-            </div>
-            <div className="hero-actions">
-              <a className="btn btn-secondary" href="/profile/edit">Edit</a>
-              <button className="icon-btn" type="button" aria-label="More profile actions"><MoreVertical size={17} /></button>
-            </div>
-          </div>
-
-          <div className="profile-org-grid">
-            {heroOrgDetails.map(([label, value]) => (
-              <div className="profile-org-item" key={label}>
-                <small>{label}</small>
-                {label === 'Reporting Manager' ? (
-                  <span className="profile-manager">
-                    <img src="https://i.pravatar.cc/48?img=47" alt="" />
-                    <strong>{value}</strong>
-                  </span>
-                ) : (
-                  <strong>{value}</strong>
-                )}
+              <div className="profile-summary-row">
+                <div className="profile-contact-list">
+                  {heroContacts.map(({ icon: Icon, label }) => (
+                    <span key={label}><Icon size={17} />{label}</span>
+                  ))}
+                </div>
+                <div className="hero-actions">
+                  <a className="btn btn-secondary" href="/profile/edit">Edit</a>
+                  <button className="icon-btn" type="button" aria-label="More profile actions"><MoreVertical size={17} /></button>
+                </div>
               </div>
-            ))}
-          </div>
-        </section>
 
-        <section className="profile-layout">
-        <ProfileSections
-          employee={employee}
-          personalInfo={apiPersonalInfo}
-          employment={apiEmployment}
-          orgUnit={apiOrgUnit}
-          documents={apiDocuments}
-          previousEmployment={profile.previousEmployment || previousEmployment}
-          education={profile.education || education}
-        />
-        </section>
+              <div className="profile-org-grid">
+                {heroOrgDetails.map(([label, value]) => (
+                  <div className="profile-org-item" key={label}>
+                    <small>{label}</small>
+                    {label === 'Reporting Manager' ? (
+                      <span className="profile-manager">
+                        <img src="https://i.pravatar.cc/48?img=47" alt="" />
+                        <strong>{value}</strong>
+                      </span>
+                    ) : (
+                      <strong>{value}</strong>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="profile-layout">
+              <ProfileSections
+                employee={employee}
+                personalInfo={apiPersonalInfo}
+                employment={apiEmployment}
+                orgUnit={apiOrgUnit}
+                documents={apiDocuments}
+                previousEmployment={profile.previousEmployment || previousEmployment}
+                education={profile.education || education}
+              />
+            </section>
+          </>
+        )}
       </section>
     </main>
   );

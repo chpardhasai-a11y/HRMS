@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import AdminRouteGuard from '../components/AdminRouteGuard';
 import Breadcrumbs from '../components/Breadcrumbs';
-import PlatformAdminSideNavigation from '../components/PlatformAdminSideNavigation';
 import { getCompanies, getPlatformHealth } from '../lib/hrmsApi';
 
 const tabs = [
@@ -148,8 +147,7 @@ export default function PlatformAdminDashboardPage() {
 
   return (
     <AdminRouteGuard allowedRole="platform_admin">
-      <main className="app-shell-with-nav">
-        <PlatformAdminSideNavigation activePath="/platform-admin" />
+      <div style={{ width: '100%' }}>
         <section className="platform-workspace">
           <style>{`
             .platform-workspace {
@@ -503,13 +501,6 @@ export default function PlatformAdminDashboardPage() {
 
             {error && <div className="platform-empty">{error}</div>}
 
-            <section className="platform-kpi-grid" aria-label="Platform KPIs">
-              <MetricCard icon={Building2} label="Total Organizations" value={isLoading ? '-' : companies.length} note="All onboarded companies" />
-              <MetricCard icon={CheckCircle2} label="Active Organizations" value={isLoading ? '-' : summary.activeOrganizations} note="Currently active tenants" />
-              <MetricCard icon={UsersRound} label="Total Active Users" value={isLoading ? '-' : summary.activeUsers.toLocaleString('en-IN')} note="Users across all organizations" />
-              <MetricCard icon={CreditCard} label="MRR / Subscription Revenue" value={isLoading ? '-' : currency(summary.mrr)} note="Current recurring revenue" />
-            </section>
-
             <nav className="platform-tabs" role="tablist" aria-label="Platform dashboard sections">
               {tabs.map((tab) => (
                 <button
@@ -643,7 +634,7 @@ export default function PlatformAdminDashboardPage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </AdminRouteGuard>
   );
 }

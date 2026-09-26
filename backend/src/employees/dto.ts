@@ -84,6 +84,9 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsString()
   documentNote?: string;
+
+  @IsOptional()
+  profile?: Record<string, any>;
 }
 
 export class UpdateStatusDto {
@@ -117,4 +120,17 @@ export class DocumentNoteDto {
   @IsOptional()
   @IsString()
   uploadNote?: string;
+}
+
+export class UpdateOnboardingDto {
+  @IsOptional()
+  @IsString()
+  stage?: string;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @IsOptional()
+  markDayOneJoined?: boolean;
 }

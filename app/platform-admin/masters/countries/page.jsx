@@ -15,7 +15,6 @@ import {
   X
 } from 'lucide-react';
 import DropdownSelect from '../../../components/DropdownSelect';
-import PlatformAdminSideNavigation from '../../../components/PlatformAdminSideNavigation';
 import {
   createCountry,
   deleteCountry,
@@ -189,9 +188,7 @@ export default function CountryMasterPage() {
   }
 
   return (
-    <div className="app-shell-with-nav">
-      <PlatformAdminSideNavigation activePath="/platform-admin/masters/countries" />
-
+    <div style={{ width: '100%' }}>
       <main className="admin-page-main" style={{ padding: '24px 32px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {/* Breadcrumb Navigation */}
         <div className="admin-breadcrumbs">

@@ -37,3 +37,43 @@ export class ResetPasswordDto {
   })
   password!: string;
 }
+
+export class VerifyInviteDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  otpOrTempPassword!: string;
+
+  @IsOptional()
+  @IsString()
+  companyId?: string;
+
+  @IsOptional()
+  @IsString()
+  companySlug?: string;
+}
+
+export class SetupAccountDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  otpOrTempPassword!: string;
+
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/, {
+    message: 'Password must include uppercase, lowercase, number and symbol'
+  })
+  newPassword!: string;
+
+  @IsOptional()
+  @IsString()
+  companyId?: string;
+
+  @IsOptional()
+  @IsString()
+  companySlug?: string;
+}
+

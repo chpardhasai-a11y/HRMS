@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import AdminRouteGuard from '../../../components/AdminRouteGuard';
 import Breadcrumbs from '../../../components/Breadcrumbs';
-import PlatformAdminSideNavigation from '../../../components/PlatformAdminSideNavigation';
 import { deleteCompany, formatDate, getCompanyById } from '../../../lib/hrmsApi';
 
 const detailTabs = [
@@ -70,8 +69,7 @@ export default function ViewCompanyPage() {
 
   return (
     <AdminRouteGuard allowedRole="platform_admin">
-      <main className="app-shell-with-nav">
-        <PlatformAdminSideNavigation activePath="/platform-admin/companies" />
+      <div style={{ width: '100%' }}>
         <section className="platform-tenant-workspace">
           <style>{`
             .platform-tenant-workspace {
@@ -621,7 +619,7 @@ export default function ViewCompanyPage() {
             )}
           </div>
         </section>
-      </main>
+      </div>
     </AdminRouteGuard>
   );
 }
