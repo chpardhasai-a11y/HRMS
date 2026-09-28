@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { EmployeeStatus, Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { RequestUser } from '../common/decorators/current-user.decorator';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateEmployeeDto,
@@ -15,7 +16,10 @@ import {
 
 @Injectable()
 export class EmployeesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService
+  ) {}
 
   private includeProfile() {
     return {
@@ -119,6 +123,16 @@ export class EmployeesService {
         instructions: '1. Click the HRMS onboarding link.\n2. Verify email/mobile using OTP or Temporary Password.\n3. Create your new password.\n4. Access HRMS.'
       };
 
+      // Trigger asynchronous onboarding invite email delivery
+      this.mailService.sendOnboardingInvite({
+        email: employee.email,
+        employeeName: employee.name,
+        employeeCode: employee.code,
+        loginUrl,
+        tempPassword,
+        otpCode
+      }).catch((err) => console.error('Failed to send onboarding email:', err));
+
       await this.audit(employee.code, actor, 'employee.invited', null, { ...employee, inviteDetails });
 
       return {
@@ -169,6 +183,16 @@ export class EmployeesService {
       otpCode,
       instructions: '1. Click the HRMS onboarding link.\n2. Verify email/mobile using OTP or Temporary Password.\n3. Create your new password.\n4. Access HRMS.'
     };
+
+    // Trigger asynchronous onboarding invite email delivery
+    this.mailService.sendOnboardingInvite({
+      email: employee.email,
+      employeeName: employee.name,
+      employeeCode: employee.code,
+      loginUrl,
+      tempPassword,
+      otpCode
+    }).catch((err) => console.error('Failed to resend onboarding email:', err));
 
     await this.audit(code, actor, 'employee.invite_resent', null, inviteDetails);
 
@@ -417,6 +441,33 @@ export class EmployeesService {
     );
 
     return employee;
+  }
+
+  async remove(code: string, actor: RequestUser) {
+    const employee = await this.findByCode(code, actor);
+
+    await this.prisma.$transaction([
+      this.prisma.user.deleteMany({
+        where: { companyId: this.companyId(actor), employeeCode: code }
+      }),
+      this.prisma.employeeDocument.deleteMany({
+        where: { employeeCode: code }
+      }),
+      this.prisma.employeeProfile.deleteMany({
+        where: { companyId: this.companyId(actor), employeeCode: code }
+      }),
+      this.prisma.employee.delete({
+        where: {
+          companyId_code: {
+            companyId: this.companyId(actor),
+            code
+          }
+        }
+      })
+    ]);
+
+    await this.audit(code, actor, 'employee.deleted', employee, null);
+    return { success: true, message: `Employee ${code} successfully deleted.` };
   }
 
   private async audit(employeeCode: string, actor: RequestUser, action: string, before: unknown, after: unknown) {

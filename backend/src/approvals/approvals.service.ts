@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RequestUser } from '../common/decorators/current-user.decorator';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApprovalDto, RejectApprovalDto } from './dto';
 
@@ -70,7 +71,10 @@ const initialApprovalsSeed = [
 
 @Injectable()
 export class ApprovalsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService
+  ) {}
 
   async findAll(
     user: RequestUser,
@@ -175,7 +179,7 @@ export class ApprovalsService {
       }
     }
 
-    // Create Audit Log
+    // Fetch employee details to send notification
     const employee = await this.prisma.employee.findFirst({
       where: { companyId: user.companyId, code: req.employeeCode }
     });
@@ -191,6 +195,14 @@ export class ApprovalsService {
           after: updated as any
         }
       });
+
+      this.mailService.sendApprovalNotification({
+        email: employee.email,
+        employeeName: employee.name,
+        reqId: req.id,
+        category: req.category,
+        status: 'Approved'
+      }).catch((err) => console.error('Failed to send approval email notification:', err));
     }
 
     return updated;
@@ -212,7 +224,7 @@ export class ApprovalsService {
       }
     });
 
-    // Create Audit Log
+    // Fetch employee details to send notification
     const employee = await this.prisma.employee.findFirst({
       where: { companyId: user.companyId, code: req.employeeCode }
     });
@@ -228,6 +240,15 @@ export class ApprovalsService {
           after: updated as any
         }
       });
+
+      this.mailService.sendApprovalNotification({
+        email: employee.email,
+        employeeName: employee.name,
+        reqId: req.id,
+        category: req.category,
+        status: 'Rejected',
+        rejectionNote: updated.rejectionNote || undefined
+      }).catch((err) => console.error('Failed to send rejection email notification:', err));
     }
 
     return updated;

@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { Prisma } from '@prisma/client';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SetupAccountDto, VerifyInviteDto } from './dto';
@@ -17,7 +18,8 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService
   ) {}
 
   async login(email: string, password: string, companyIdOrSlug?: string) {
@@ -94,6 +96,13 @@ export class AuthService {
     }[audience];
     const resetUrl = `${this.frontendUrl()}${resetPath}?token=${token}`;
     this.logger.log(`Password reset link for ${user.email}: ${resetUrl}`);
+
+    // Deliver reset email asynchronously
+    this.mailService.sendPasswordReset({
+      email: user.email,
+      resetUrl,
+      userName: user.email.split('@')[0]
+    }).catch((err) => this.logger.error(`Failed to send password reset email to ${user.email}`, err));
 
     return { message: this.forgotPasswordMessage };
   }

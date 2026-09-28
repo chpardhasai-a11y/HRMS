@@ -366,8 +366,9 @@ export default function OnboardingQueuePage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredQueue.map((item) => {
+                          {filteredQueue.map((item, index) => {
                             const prog = item.onboardingProgress || {};
+                            const isBottomRow = index >= filteredQueue.length - 3 && filteredQueue.length > 2;
                             return (
                               <tr key={item.code}>
                                 <td>
@@ -436,7 +437,7 @@ export default function OnboardingQueuePage() {
                                   </button>
 
                                   {openMenuCode === item.code && (
-                                    <div className="row-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+                                    <div className={`row-menu ${isBottomRow ? 'row-menu-up' : ''}`} role="menu" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         type="button"
                                         onClick={() => {

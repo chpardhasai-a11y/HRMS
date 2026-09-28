@@ -264,8 +264,10 @@ h1, h2, h3, p {
 
 .employee-table-wrap {
   overflow-x: auto;
+  overflow-y: visible;
   border: 1px solid var(--admin-border);
   border-radius: 8px;
+  min-height: 280px;
 }
 
 .employee-table {
@@ -363,7 +365,7 @@ h1, h2, h3, p {
   position: absolute;
   top: 100%;
   right: 14px;
-  z-index: 50;
+  z-index: 500;
   display: grid;
   width: 220px;
   border: 1px solid var(--admin-border);
@@ -371,6 +373,15 @@ h1, h2, h3, p {
   background: white;
   box-shadow: 0 12px 28px rgba(16, 24, 40, 0.16);
   padding: 6px;
+  margin-top: 4px;
+}
+
+.row-menu.row-menu-up {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 6px;
+  box-shadow: 0 -12px 28px rgba(16, 24, 40, 0.16);
 }
 
 .row-menu button,

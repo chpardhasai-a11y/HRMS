@@ -28,6 +28,7 @@ import { WorkModesModule } from './org-masters/work-modes/work-modes.module';
 import { WorkShiftsModule } from './org-masters/work-shifts/work-shifts.module';
 import { HolidayCalendarsModule } from './org-masters/holiday-calendars/holiday-calendars.module';
 import { ApprovalsModule } from './approvals/approvals.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
     CompaniesModule,
     AuthModule,
     EmployeesModule,
+    MailModule,
     IndustriesModule,
     CountriesModule,
     CurrenciesModule,

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { CurrentUser, RequestUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -55,6 +55,12 @@ export class EmployeesController {
   @Roles(UserRole.employee, UserRole.org_admin)
   findOne(@Param('code') code: string, @CurrentUser() user: RequestUser) {
     return this.employees.findByCode(code, user);
+  }
+
+  @Delete(':code')
+  @Roles(UserRole.org_admin)
+  remove(@Param('code') code: string, @CurrentUser() user: RequestUser) {
+    return this.employees.remove(code, user);
   }
 
   @Patch(':code')

@@ -168,6 +168,12 @@ export function getEmployee(code) {
   return apiRequest(`/employees/${code}`);
 }
 
+export function deleteEmployee(code) {
+  return apiRequest(`/employees/${code}`, {
+    method: 'DELETE'
+  });
+}
+
 export function createEmployee(payload) {
   return apiRequest('/employees', {
     method: 'POST',

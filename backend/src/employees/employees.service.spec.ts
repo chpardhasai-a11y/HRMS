@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 describe('EmployeesService', () => {
   const actor = { sub: 'u1', companyId: 'c1', email: 'hr@nw18.com', role: 'org_admin' };
+  const mockMail = { sendOnboardingInvite: jest.fn().mockResolvedValue({ success: true }) } as any;
 
   it('updates status and writes an audit entry', async () => {
     const prisma = {
@@ -12,7 +13,7 @@ describe('EmployeesService', () => {
       },
       auditLog: { create: jest.fn() }
     };
-    const service = new EmployeesService(prisma as any);
+    const service = new EmployeesService(prisma as any, mockMail);
 
     await expect(service.updateStatus('EMP001245', { status: 'Inactive' as any }, actor)).resolves.toMatchObject({ status: 'Inactive' });
     expect(prisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -26,7 +27,7 @@ describe('EmployeesService', () => {
         findMany: jest.fn().mockResolvedValue([])
       }
     };
-    const service = new EmployeesService(prisma as any);
+    const service = new EmployeesService(prisma as any, mockMail);
 
     await service.findAll(actor, {});
     expect(prisma.employee.findMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -44,7 +45,7 @@ describe('EmployeesService', () => {
         }))
       }
     };
-    const service = new EmployeesService(prisma as any);
+    const service = new EmployeesService(prisma as any, mockMail);
 
     await expect(service.create({
       code: 'EMP001245',
@@ -76,7 +77,7 @@ describe('EmployeesService', () => {
       },
       auditLog: { create: jest.fn() }
     };
-    const service = new EmployeesService(prisma as any);
+    const service = new EmployeesService(prisma as any, mockMail);
 
     const res = await service.create({
       code: 'EMP001245',
@@ -107,4 +108,3 @@ describe('EmployeesService', () => {
     }));
   });
 });
-

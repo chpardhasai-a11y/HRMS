@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   Smartphone,
   ToggleLeft,
+  Trash2,
   Upload,
   UserRound,
   UsersRound,
@@ -32,6 +33,7 @@ import DropdownSelect from '../components/DropdownSelect';
 import { SkeletonMetrics, SkeletonTable } from '../components/SkeletonLoader';
 import {
   createEmployee,
+  deleteEmployee,
   formatDate,
   getCurrentCompany,
   getEmployeeAudit,
@@ -401,6 +403,14 @@ export default function AdminPage() {
         </div>
       );
     }
+    if (modal?.type === 'delete') {
+      return (
+        <div className="danger-copy">
+          <Trash2 size={28} color="#dc2626" />
+          <p>Are you sure you want to delete profile for <strong>{selectedEmployee.name}</strong> ({selectedEmployee.code})? This will permanently remove their employee record, user account, and profile data.</p>
+        </div>
+      );
+    }
     if (modal?.type === 'invite_sent') {
       const details = modal.inviteDetails || {};
       const targetEmail = details.sentToEmail || modal.employee?.email || '';
@@ -549,6 +559,26 @@ export default function AdminPage() {
     if (modal?.type === 'deactivate') {
       return <button className="btn btn-danger" type="button" onClick={() => applyEmployeeUpdate(selectedEmployee.code, () => updateEmployeeStatus(selectedEmployee.code, 'Inactive'), `${selectedEmployee.code} deactivated.`)}>Deactivate Employee</button>;
     }
+    if (modal?.type === 'delete') {
+      return (
+        <button
+          className="btn btn-danger"
+          type="button"
+          onClick={async () => {
+            try {
+              await deleteEmployee(selectedEmployee.code);
+              setEmployees((currentEmployees) => currentEmployees.filter((e) => e.code !== selectedEmployee.code));
+              setToast(`Deleted profile for ${selectedEmployee.name} (${selectedEmployee.code}).`);
+              closeModal();
+            } catch (err) {
+              setToast(err.message || 'Failed to delete employee profile.');
+            }
+          }}
+        >
+          <Trash2 size={16} />Delete Profile
+        </button>
+      );
+    }
     return null;
   }
 
@@ -561,6 +591,7 @@ export default function AdminPage() {
       upload: 'Upload Documents',
       audit: 'Audit History',
       deactivate: 'Deactivate Employee',
+      delete: 'Delete Employee Profile',
       create: 'Add Employee & Send Invitation',
       invite_sent: 'Employee Invitation Sent'
     };
@@ -668,54 +699,49 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEmployees.map((employee) => (
-                      <tr key={employee.code}>
-                        <td>
-                          <div className="employee-name">
-                            <span className="avatar">{employee.name.slice(0, 1)}</span>
-                            <div>
-                              <strong>{employee.name}</strong>
-                              <span className="employee-subtext">{employee.code} | {employee.role}</span>
+                    {filteredEmployees.map((employee, index) => {
+                      const isBottomRow = index >= filteredEmployees.length - 3 && filteredEmployees.length > 2;
+                      return (
+                        <tr key={employee.code}>
+                          <td>
+                            <div className="employee-name">
+                              <span className="avatar">{employee.name.slice(0, 1)}</span>
+                              <div>
+                                <strong>{employee.name}</strong>
+                                <span className="employee-subtext">{employee.code} | {employee.role}</span>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>{employee.entity}</td>
-                        <td>{employee.department}</td>
-                        <td>{employee.location}</td>
-                        <td>
-                          <strong>{employee.type}</strong>
-                          <span className="employee-subtext">{employee.grade} | Joined {formatDate(employee.joinDate)}</span>
-                        </td>
-                        <td>{employee.manager}</td>
-                        <td><span className={`badge ${statusClass(employee.status)}`}>{statusLabel(employee.status)}</span></td>
-                        <td className="actions-cell" onClick={(event) => event.stopPropagation()}>
-                          <button
-                            className="icon-btn"
-                            type="button"
-                            aria-expanded={openMenuCode === employee.code}
-                            aria-label={`Open actions for ${employee.name}`}
-                            onClick={() => toggleRowMenu(employee.code)}
-                          >
-                            <MoreHorizontal size={16} />
-                          </button>
+                          </td>
+                          <td>{employee.entity}</td>
+                          <td>{employee.department}</td>
+                          <td>{employee.location}</td>
+                          <td>
+                            <strong>{employee.type}</strong>
+                            <span className="employee-subtext">{employee.grade} | Joined {formatDate(employee.joinDate)}</span>
+                          </td>
+                          <td>{employee.manager}</td>
+                          <td><span className={`badge ${statusClass(employee.status)}`}>{statusLabel(employee.status)}</span></td>
+                          <td className="actions-cell" onClick={(event) => event.stopPropagation()}>
+                            <button
+                              className="icon-btn"
+                              type="button"
+                              aria-expanded={openMenuCode === employee.code}
+                              aria-label={`Open actions for ${employee.name}`}
+                              onClick={() => toggleRowMenu(employee.code)}
+                            >
+                              <MoreHorizontal size={16} />
+                            </button>
 
-                          {openMenuCode === employee.code && (
-                            <div className="row-menu" role="menu" onClick={(event) => event.stopPropagation()}>
-                              <a href={`/org-admin/employees/${employee.code}`}><UserRound size={15} />View Profile</a>
-                              <button type="button" onClick={() => openModal('edit', employee)}><Edit3 size={15} />Edit Employee</button>
-                              <button type="button" onClick={() => resendInviteRecord(employee)}><Send size={15} />Resend Invitation</button>
-                              <button type="button" onClick={() => openModal('status', employee)}><ToggleLeft size={15} />Change Status</button>
-                              <button type="button" onClick={() => openModal('manager', employee)}><UsersRound size={15} />Update Reporting Manager</button>
-                              <button type="button" onClick={() => openModal('transfer', employee)}><GitBranch size={15} />Transfer / Role Change</button>
-                              <button type="button" onClick={() => openModal('upload', employee)}><FileUp size={15} />Upload Documents</button>
-                              <button type="button" onClick={() => openModal('audit', employee)}><FileClock size={15} />View Audit History</button>
-                              <button type="button" onClick={() => downloadEmployee(employee)}><FileDown size={15} />Download Employee Record</button>
-                              <button className="danger-action" type="button" onClick={() => openModal('deactivate', employee)}><ShieldAlert size={15} />Deactivate Employee</button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                            {openMenuCode === employee.code && (
+                              <div className={`row-menu ${isBottomRow ? 'row-menu-up' : ''}`} role="menu" onClick={(event) => event.stopPropagation()}>
+                                <a href={`/org-admin/employees/${employee.code}`}><UserRound size={15} />View Profile</a>
+                                <button className="danger-action" type="button" onClick={() => openModal('delete', employee)}><Trash2 size={15} />Delete Profile</button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import DropdownSelect from '../../components/DropdownSelect';
 import SideNavigation from '../../components/SideNavigation';
-import { createApprovalRequest, getApprovals, getEmployee, updateEmployee } from '../../lib/hrmsApi';
+import { createApprovalRequest, getApprovals, getEmployee, getStoredUser, updateEmployee } from '../../lib/hrmsApi';
 
 const sectionNav = [
   ['Personal Info', UserRound, 'personal-info'],
@@ -162,7 +162,9 @@ export default function EditProfilePage() {
   const [toast, setToast] = useState('');
 
   useEffect(() => {
-    const code = 'EMP001245';
+    const storedUser = getStoredUser();
+    const code = storedUser?.employeeCode || 'EMP001245';
+
     getEmployee(code)
       .then((record) => {
         setEmployee(record);

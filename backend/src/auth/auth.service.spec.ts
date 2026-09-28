@@ -21,12 +21,14 @@ describe('AuthService', () => {
   });
 
   it('returns a JWT for valid credentials', async () => {
+    const mockMail = { sendPasswordReset: jest.fn().mockResolvedValue({ success: true }) } as any;
     const passwordHash = await bcrypt.hash('Password@123', 4);
     const service = new AuthService(
       { findByEmail: jest.fn().mockResolvedValue({ id: 'u1', companyId: 'c1', email: 'admin@nw18.com', passwordHash, role: 'platform_admin', isActive: true, employeeCode: null }) } as any,
       { signAsync: jest.fn().mockResolvedValue('token') } as unknown as JwtService,
       {} as any,
-      prisma as any
+      prisma as any,
+      mockMail
     );
 
     await expect(service.login('admin@nw18.com', 'Password@123')).resolves.toMatchObject({
@@ -36,22 +38,26 @@ describe('AuthService', () => {
   });
 
   it('rejects invalid credentials', async () => {
+    const mockMail = { sendPasswordReset: jest.fn().mockResolvedValue({ success: true }) } as any;
     const service = new AuthService(
       { findByEmail: jest.fn().mockResolvedValue(null) } as any,
       { signAsync: jest.fn() } as unknown as JwtService,
       {} as any,
-      prisma as any
+      prisma as any,
+      mockMail
     );
 
     await expect(service.login('missing@nw18.com', 'Password@123')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('does not reveal whether a forgot-password email exists', async () => {
+    const mockMail = { sendPasswordReset: jest.fn().mockResolvedValue({ success: true }) } as any;
     const service = new AuthService(
       { findByEmail: jest.fn().mockResolvedValue(null) } as any,
       { signAsync: jest.fn() } as unknown as JwtService,
       {} as any,
-      prisma as any
+      prisma as any,
+      mockMail
     );
 
     await expect(service.forgotPassword('missing@nw18.com')).resolves.toMatchObject({
@@ -60,6 +66,7 @@ describe('AuthService', () => {
   });
 
   it('resets a password when the token is valid', async () => {
+    const mockMail = { sendPasswordReset: jest.fn().mockResolvedValue({ success: true }) } as any;
     prisma.passwordResetToken.findUnique.mockResolvedValue({
       id: 't1',
       companyId: 'c1',
@@ -72,7 +79,8 @@ describe('AuthService', () => {
       { findByEmail: jest.fn() } as any,
       { signAsync: jest.fn() } as unknown as JwtService,
       {} as any,
-      prisma as any
+      prisma as any,
+      mockMail
     );
 
     await expect(service.resetPassword('token', 'Password@123')).resolves.toMatchObject({

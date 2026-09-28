@@ -13,7 +13,7 @@ import HeroHeightSync from './components/HeroHeightSync';
 import ProfileSections from './components/ProfileSections';
 import SideNavigation from './components/SideNavigation';
 import { SkeletonProfile } from './components/SkeletonLoader';
-import { formatDate, getEmployee, statusLabel } from './lib/hrmsApi';
+import { formatDate, getEmployee, getStoredUser, statusLabel } from './lib/hrmsApi';
 
 const fallbackEmployee = {
   name: 'Rahul Sharma',
@@ -79,7 +79,10 @@ export default function Home() {
   const [loadState, setLoadState] = useState('loading');
 
   useEffect(() => {
-    getEmployee('EMP001245')
+    const storedUser = getStoredUser();
+    const activeCode = storedUser?.employeeCode || 'EMP001245';
+
+    getEmployee(activeCode)
       .then((record) => {
         const profile = record.profile || {};
         setEmployee({
@@ -91,7 +94,25 @@ export default function Home() {
         });
         setLoadState('ready');
       })
-      .catch(() => setLoadState('offline'));
+      .catch(() => {
+        if (activeCode !== 'EMP001245') {
+          getEmployee('EMP001245')
+            .then((record) => {
+              const profile = record.profile || {};
+              setEmployee({
+                ...fallbackEmployee,
+                ...record,
+                status: statusLabel(record.status),
+                joined: formatDate(record.joinDate),
+                workMode: profile.workMode || fallbackEmployee.workMode
+              });
+              setLoadState('ready');
+            })
+            .catch(() => setLoadState('offline'));
+        } else {
+          setLoadState('offline');
+        }
+      });
   }, []);
 
   const heroContacts = [
