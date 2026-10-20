@@ -6,6 +6,10 @@ export type RequestUser = {
   email: string;
   role: string;
   employeeCode?: string | null;
+  permissions?: string[];
+  permissionKey?: string;
+  delegatedAccess?: boolean;
+  authVersion?: number;
 };
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {

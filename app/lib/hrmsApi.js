@@ -1026,3 +1026,17 @@ function redirectToLogin() {
   }
   window.location.href = '/login';
 }
+
+let identityRequest = null;
+let identityToken = null;
+export function refreshStoredUser() {
+  const accessToken = storage()?.getItem(TOKEN_KEY);
+  if (!identityRequest || identityToken !== accessToken) {
+    identityToken = accessToken;
+    identityRequest = apiRequest('/auth/me').then(user => {
+      if (storage()?.getItem(TOKEN_KEY) === accessToken) storage()?.setItem(USER_KEY, JSON.stringify(user));
+      return user;
+    }).finally(() => { if (identityToken === accessToken) identityRequest = null; });
+  }
+  return identityRequest;
+}

@@ -14,24 +14,24 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-const bankDetails = [
-  ['Bank Name', 'HDFC Bank'],
-  ['Account Number', '•••• •••• 7421'],
-  ['IFSC Code', 'HDFC0001234'],
-  ['Account Type', 'Salary Account']
+const bankDetailsFallback = [
+  ['Bank Name', 'Not Provided'],
+  ['Account Number', 'Not Provided'],
+  ['IFSC Code', 'Not Provided'],
+  ['Account Type', 'Not Provided']
 ];
 
-const statutoryDetails = [
-  ['PAN', 'ABCDE••••F'],
-  ['Aadhaar', '•••• •••• 3921'],
-  ['UAN', '1004•••••921'],
-  ['PF Number', 'MH/BAN/••••/042']
+const statutoryDetailsFallback = [
+  ['PAN', 'Not Provided'],
+  ['Aadhaar', 'Not Provided'],
+  ['UAN', 'Not Provided'],
+  ['PF Number', 'Not Provided']
 ];
 
-const salaryItems = [
-  ['Annual CTC', '₹24,00,000', 'Effective Apr 2026'],
-  ['Monthly Gross', '₹2,00,000', 'Before deductions'],
-  ['Payroll Status', 'Active', 'Current cycle eligible']
+const salaryItemsFallback = [
+  ['Annual CTC', 'Not Configured', 'Pending HR / Payroll setup'],
+  ['Monthly Gross', 'Not Configured', 'Pending HR / Payroll setup'],
+  ['Payroll Status', 'Pending', 'Awaiting first payroll cycle']
 ];
 
 const sectionMeta = {
@@ -61,37 +61,37 @@ const sectionMeta = {
   },
   'previous-employment': {
     title: 'Previous Employment',
-    status: 'Reviewed',
+    status: 'Records',
     summary: 'Prior work experience and role history.',
     icon: ClipboardCheck
   },
   documents: {
     title: 'Documents',
-    status: '3 valid',
+    status: 'Verification',
     summary: 'Identity and employment document verification status.',
     icon: FileCheck2
   },
   'bank-details': {
     title: 'Bank Details',
-    status: 'Masked',
-    summary: 'Salary account information with sensitive values hidden.',
+    status: 'Salary Account',
+    summary: 'Salary account information for payroll.',
     icon: Landmark
   },
   'statutory-details': {
     title: 'Statutory Details',
-    status: 'Verified',
+    status: 'Tax / Statutory',
     summary: 'Government and payroll statutory identifiers.',
     icon: IdCard
   },
   'education-details': {
     title: 'Education Details',
-    status: 'Complete',
+    status: 'Academic',
     summary: 'Highest qualifications and academic history.',
     icon: GraduationCap
   },
   'salary-details': {
     title: 'Salary Details',
-    status: 'Restricted',
+    status: 'Compensation',
     summary: 'Compensation summary for the current payroll cycle.',
     icon: CircleDollarSign
   }
@@ -125,67 +125,11 @@ const profileTabs = [
   }
 ];
 
-const sectionDetails = {
-  'personal-info': {
-    rows: [
-      ['Date of Birth', '12 Aug 1993'],
-      ['Blood Group', 'B+'],
-      ['Gender', 'Male'],
-      ['Nationality', 'Indian'],
-      ['Marital Status', 'Married'],
-      ['Languages Known', 'English, Hindi']
-    ]
-  },
-  employment: {
-    rows: [
-      ['Employee Type', 'Permanent'],
-      ['Employment Status', 'Active'],
-      ['Work Mode', 'Hybrid'],
-      ['Notice Period', '60 days'],
-      ['Joining Date', '15 Feb 2022'],
-      ['Grade', 'G6']
-    ]
-  },
-  'organization-unit': {
-    rows: [
-      ['Business Unit', 'Digital Products'],
-      ['Department', 'Engineering'],
-      ['Team', 'HRMS Platform'],
-      ['Designation', 'Senior Software Engineer'],
-      ['Reporting Manager', 'Sneha Iyer'],
-      ['Cost Center', 'ENG-PLT-204']
-    ]
-  },
-  'location-address': {
-    addresses: [
-      ['Current Address', 'Primary', 'Flat 1402, Orchid Heights, Powai, Mumbai, Maharashtra 400076'],
-      ['Permanent Address', '', '45 Green Park Road, Jaipur, Rajasthan 302004']
-    ]
-  },
-  'previous-employment': {
-    timeline: true
-  },
-  documents: {
-    documents: true
-  },
-  'bank-details': {
-    rows: bankDetails
-  },
-  'statutory-details': {
-    rows: statutoryDetails
-  },
-  'education-details': {
-    education: true
-  },
-  'salary-details': {
-    salary: true
-  }
-};
-
-function SalaryGrid() {
+function SalaryGrid({ items }) {
+  const list = Array.isArray(items) && items.length > 0 ? items : salaryItemsFallback;
   return (
     <div className="salary-grid">
-      {salaryItems.map(([label, value, note]) => (
+      {list.map(([label, value, note]) => (
         <article key={label}>
           <span>{label}</span>
           <strong>{value}</strong>
@@ -197,10 +141,17 @@ function SalaryGrid() {
 }
 
 function TimelineList({ items }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div style={{ padding: '16px 0', color: '#64748b', fontSize: '13px' }}>
+        No previous employment records added. Click Edit Profile to add previous experience.
+      </div>
+    );
+  }
   return (
     <div className="timeline-list">
       {items.map(([period, role, company, description]) => (
-        <article key={company}>
+        <article key={company || role}>
           <span>{period}</span>
           <div>
             <h3>{role}</h3>
@@ -214,6 +165,13 @@ function TimelineList({ items }) {
 }
 
 function DocumentGrid({ items }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div style={{ padding: '16px 0', color: '#64748b', fontSize: '13px' }}>
+        No statutory documents uploaded yet.
+      </div>
+    );
+  }
   return (
     <div className="document-grid">
       {items.map(([name, status, tone]) => (
@@ -221,7 +179,7 @@ function DocumentGrid({ items }) {
           <FileCheck2 size={20} />
           <div>
             <h3>{name}</h3>
-            <span className={`badge ${tone}`}>{status}</span>
+            <span className={`badge ${tone || 'badge-neutral'}`}>{status}</span>
           </div>
         </article>
       ))}
@@ -230,6 +188,13 @@ function DocumentGrid({ items }) {
 }
 
 function EducationList({ items }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div style={{ padding: '16px 0', color: '#64748b', fontSize: '13px' }}>
+        No education records added. Click Edit Profile to add academic details.
+      </div>
+    );
+  }
   return (
     <div className="education-list">
       {items.map(([degree, institute, years]) => (
@@ -271,21 +236,40 @@ function AddressRows({ items }) {
 
 function ProfileSectionPanel({ id, data }) {
   const section = sectionMeta[id];
-  const details = { ...sectionDetails[id] };
   const Icon = section.icon;
   const profile = data.employee?.profile || {};
+  let rows = null;
+  let addresses = null;
+  let isTimeline = false;
+  let isDocuments = false;
+  let isEducation = false;
+  let isSalary = false;
 
-  if (id === 'personal-info') details.rows = data.personalInfo;
-  if (id === 'employment') details.rows = data.employment;
-  if (id === 'organization-unit') details.rows = data.orgUnit;
-  if (id === 'location-address' && (profile.currentAddress || profile.permanentAddress)) {
-    details.addresses = [
-      ['Current Address', 'Primary', profile.currentAddress],
-      ['Permanent Address', '', profile.permanentAddress]
-    ].filter(([, , value]) => value);
+  if (id === 'personal-info') rows = data.personalInfo;
+  else if (id === 'employment') rows = data.employment;
+  else if (id === 'organization-unit') rows = data.orgUnit;
+  else if (id === 'location-address') {
+    addresses = [
+      ['Current Address', 'Primary', profile.currentAddress || 'Not Provided'],
+      ['Permanent Address', '', profile.permanentAddress || 'Not Provided']
+    ];
+  } else if (id === 'bank-details') {
+    rows = profile.bankDetails && Array.isArray(profile.bankDetails) && profile.bankDetails.length > 0
+      ? profile.bankDetails
+      : bankDetailsFallback;
+  } else if (id === 'statutory-details') {
+    rows = profile.statutoryDetails && Array.isArray(profile.statutoryDetails) && profile.statutoryDetails.length > 0
+      ? profile.statutoryDetails
+      : statutoryDetailsFallback;
+  } else if (id === 'previous-employment') {
+    isTimeline = true;
+  } else if (id === 'documents') {
+    isDocuments = true;
+  } else if (id === 'education-details') {
+    isEducation = true;
+  } else if (id === 'salary-details') {
+    isSalary = true;
   }
-  if (id === 'bank-details' && profile.bankDetails) details.rows = profile.bankDetails;
-  if (id === 'statutory-details' && profile.statutoryDetails) details.rows = profile.statutoryDetails;
 
   return (
     <section className="profile-section-panel" id={id}>
@@ -295,12 +279,12 @@ function ProfileSectionPanel({ id, data }) {
           <h2>{section.title}</h2>
         </div>
       </header>
-      {details.rows && <DetailRows items={details.rows} />}
-      {details.addresses && <AddressRows items={details.addresses} />}
-      {details.timeline && <TimelineList items={data.previousEmployment} />}
-      {details.documents && <DocumentGrid items={data.documents} />}
-      {details.education && <EducationList items={data.education} />}
-      {details.salary && <SalaryGrid />}
+      {rows && <DetailRows items={rows} />}
+      {addresses && <AddressRows items={addresses} />}
+      {isTimeline && <TimelineList items={data.previousEmployment} />}
+      {isDocuments && <DocumentGrid items={data.documents} />}
+      {isEducation && <EducationList items={data.education} />}
+      {isSalary && <SalaryGrid items={profile.salaryDetails} />}
     </section>
   );
 }

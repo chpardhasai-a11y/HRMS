@@ -1,13 +1,26 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
-import { CurrentUser, RequestUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { CreateTeamDto, UpdateTeamDto } from './dto';
-import { TeamsService } from './teams.service';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
+import { UserRole } from "@prisma/client";
+import {
+  CurrentUser,
+  RequestUser,
+} from "../../common/decorators/current-user.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { CreateTeamDto, UpdateTeamDto } from "./dto";
+import { TeamsService } from "./teams.service";
 
-@Controller('org-masters/teams')
+@Controller("org-masters/teams")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.org_admin, UserRole.platform_admin)
 export class TeamsController {
@@ -16,14 +29,14 @@ export class TeamsController {
   @Get()
   findAll(
     @CurrentUser() user: RequestUser,
-    @Query('search') search?: string,
-    @Query('status') status?: string
+    @Query("search") search?: string,
+    @Query("status") status?: string,
   ) {
     return this.service.findAll(user, { search, status });
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+  @Get(":id")
+  findOne(@Param("id") id: string, @CurrentUser() user: RequestUser) {
     return this.service.findOne(id, user);
   }
 
@@ -32,18 +45,22 @@ export class TeamsController {
     return this.service.create(dto, user);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTeamDto, @CurrentUser() user: RequestUser) {
+  @Patch(":id")
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateTeamDto,
+    @CurrentUser() user: RequestUser,
+  ) {
     return this.service.update(id, dto, user);
   }
 
-  @Patch(':id/toggle-status')
-  toggleStatus(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+  @Patch(":id/toggle-status")
+  toggleStatus(@Param("id") id: string, @CurrentUser() user: RequestUser) {
     return this.service.toggleStatus(id, user);
   }
 
-  @Delete(':id')
-  delete(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+  @Delete(":id")
+  delete(@Param("id") id: string, @CurrentUser() user: RequestUser) {
     return this.service.delete(id, user);
   }
 }

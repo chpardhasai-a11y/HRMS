@@ -13,3 +13,14 @@ yarn-error.log*
 .next-app/
 node_modules/
 HRMS/
+
+private-workflow-files/
+backend/private-workflow-files/
+playwright-report/
+test-results/
+
+.next-workflow-qa/
+
+.next-roles-qa/
+
+.next-access-design-qa/

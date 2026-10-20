@@ -230,6 +230,12 @@ export default function OnboardingQueuePage() {
         grade: formState.grade,
         joinDate: formState.joinDate
       });
+      if (employee.accountAlreadyExists) {
+        setToast('Employee created. The existing sign-in account was preserved; link it in User Management.');
+        setModal(null);
+        loadOnboardingData();
+        return;
+      }
       setToast(`Invitation dispatched to ${employee.name} (${employee.email}).`);
       setModal({ type: 'invite_sent', employee, inviteDetails: employee.inviteDetails });
       loadOnboardingData();

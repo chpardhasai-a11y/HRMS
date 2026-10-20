@@ -80,6 +80,10 @@ export default function Home() {
 
   useEffect(() => {
     const storedUser = getStoredUser();
+    if (storedUser?.role === 'employee' && !storedUser.employeeCode) {
+      setLoadState('unlinked');
+      return;
+    }
     const activeCode = storedUser?.employeeCode || 'EMP001245';
 
     getEmployee(activeCode)
@@ -115,6 +119,10 @@ export default function Home() {
       });
   }, []);
 
+  if (loadState === 'unlinked') {
+    return <main className="app-shell-with-nav"><SideNavigation activePath="/" /><section className="profile-page" style={{ padding: 24 }}><h1>No employee profile linked</h1><p>Your sign-in account is active. Ask your organization administrator to link your employee record in User Management.</p></section></main>;
+  }
+
   const heroContacts = [
     { icon: Mail, label: employee.email },
     { icon: Phone, label: employee.phone },
@@ -123,41 +131,41 @@ export default function Home() {
   ];
 
   const heroOrgDetails = [
-    ['Business Unit', employee.profile?.businessUnit || 'Digital Products'],
-    ['Department', employee.department],
-    ['Sub-Department', employee.profile?.team || 'HRMS Platform'],
-    ['Cost Center', employee.profile?.costCenter || 'ENG-PLT-204'],
-    ['Reporting Manager', employee.manager]
+    ['Business Unit', employee.profile?.businessUnit || employee.department || 'Not Provided'],
+    ['Department', employee.department || 'Not Provided'],
+    ['Sub-Department', employee.profile?.team || 'Not Provided'],
+    ['Cost Center', employee.profile?.costCenter || 'Not Provided'],
+    ['Reporting Manager', employee.manager || 'Not Provided']
   ];
 
   const profile = employee.profile || {};
   const apiPersonalInfo = [
-    ['Date of Birth', formatDate(profile.dateOfBirth) || '12 Aug 1993'],
-    ['Gender', profile.gender || 'Male'],
-    ['Marital Status', profile.maritalStatus || 'Married'],
-    ['Blood Group', profile.bloodGroup || 'B+'],
-    ['Nationality', profile.nationality || 'Indian'],
-    ['Emergency Contact', profile.emergencyContact && profile.emergencyPhone ? `${profile.emergencyContact} · ${profile.emergencyPhone}` : 'Anita Sharma · +91 99887 77665']
+    ['Date of Birth', formatDate(profile.dateOfBirth) || 'Not Provided'],
+    ['Gender', profile.gender || 'Not Provided'],
+    ['Marital Status', profile.maritalStatus || 'Not Provided'],
+    ['Blood Group', profile.bloodGroup || 'Not Provided'],
+    ['Nationality', profile.nationality || 'Not Provided'],
+    ['Emergency Contact', profile.emergencyContact ? `${profile.emergencyContact}${profile.emergencyPhone ? ' · ' + profile.emergencyPhone : ''}` : 'Not Provided']
   ];
   const apiEmployment = [
-    ['Employee Type', employee.type],
-    ['Work Mode', profile.workMode || 'Hybrid'],
-    ['Probation Status', 'Confirmed'],
-    ['Notice Period', profile.noticePeriod || '60 days'],
+    ['Employee Type', employee.type || 'Permanent'],
+    ['Work Mode', profile.workMode || 'Office'],
+    ['Probation Status', 'Active'],
+    ['Notice Period', profile.noticePeriod || 'Not Provided'],
     ['Shift', profile.shift || 'General Shift'],
-    ['Grade', employee.grade]
+    ['Grade', employee.grade || 'Not Provided']
   ];
   const apiOrgUnit = [
-    ['Business Unit', profile.businessUnit || 'Digital Products'],
-    ['Department', employee.department],
-    ['Team', profile.team || 'HRMS Platform'],
-    ['Cost Center', profile.costCenter || 'ENG-PLT-204'],
-    ['Reporting Manager', employee.manager],
-    ['HR Partner', profile.hrPartner || 'Diya Rao']
+    ['Business Unit', profile.businessUnit || 'Not Provided'],
+    ['Department', employee.department || 'Not Provided'],
+    ['Team', profile.team || 'Not Provided'],
+    ['Cost Center', profile.costCenter || 'Not Provided'],
+    ['Reporting Manager', employee.manager || 'Not Provided'],
+    ['HR Partner', profile.hrPartner || 'HR Ops']
   ];
   const apiDocuments = employee.documents?.length
     ? employee.documents.map((document) => [document.type, document.status, document.status === 'Verified' ? 'badge-success' : document.status === 'Pending' ? 'badge-warning' : 'badge-info'])
-    : documents;
+    : [];
 
   return (
     <main className="app-shell-with-nav">

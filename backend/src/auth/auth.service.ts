@@ -40,6 +40,7 @@ export class AuthService {
     if (!passwordMatches) throw new UnauthorizedException('Invalid email or password');
 
     const payload = {
+      authVersion: user.authVersion,
       sub: user.id,
       companyId: user.companyId,
       email: user.email,
@@ -55,6 +56,7 @@ export class AuthService {
     return {
       accessToken: await this.jwt.signAsync(payload),
       user: {
+        permissions: (await this.users.findById(user.id))?.permissions || [],
         id: user.id,
         companyId: user.companyId,
         email: user.email,
@@ -133,6 +135,7 @@ export class AuthService {
         where: { id: resetToken.userId },
         data: {
           passwordHash,
+          authVersion: { increment: 1 },
           passwordChangedAt: new Date()
         }
       }),
@@ -162,12 +165,22 @@ export class AuthService {
     }
 
     const user = await this.users.findByEmail(email.toLowerCase(), companyId);
-    if (!user) {
+    if (!user || !user.isActive || user.passwordChangedAt) {
       throw new BadRequestException('Invalid invitation link or email address.');
     }
 
-    const matches = await bcrypt.compare(otpOrTempPassword, user.passwordHash);
-    if (!matches && otpOrTempPassword !== '123456' && user.passwordHash !== otpOrTempPassword) {
+    const cleanInput = (otpOrTempPassword || '').trim();
+    let matches = false;
+
+    if (cleanInput) {
+      matches =
+        (await bcrypt.compare(cleanInput, user.passwordHash).catch(() => false)) ||
+        (await bcrypt.compare(`Hrms#${cleanInput}`, user.passwordHash).catch(() => false)) ||
+        (cleanInput.toLowerCase().startsWith('hrms#') &&
+          (await bcrypt.compare(cleanInput.slice(5), user.passwordHash).catch(() => false)));
+    }
+
+    if (!matches) {
       throw new BadRequestException('Invalid temporary password or OTP code.');
     }
 
@@ -205,6 +218,7 @@ export class AuthService {
         data: {
           passwordHash,
           isActive: true,
+          authVersion: { increment: 1 },
           passwordChangedAt: new Date()
         }
       }),
@@ -218,6 +232,7 @@ export class AuthService {
     ]);
 
     const payload = {
+      authVersion: user.authVersion + 1,
       sub: user.id,
       companyId: user.companyId,
       email: user.email,
@@ -228,6 +243,7 @@ export class AuthService {
     return {
       accessToken: await this.jwt.signAsync(payload),
       user: {
+        permissions: (await this.users.findById(user.id))?.permissions || [],
         id: user.id,
         companyId: user.companyId,
         email: user.email,

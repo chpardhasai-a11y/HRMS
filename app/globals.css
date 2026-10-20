@@ -2602,3 +2602,11 @@ input[type="text"].dropdown-select-search-input:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* Access Control modules scheduled for the next release. */
+.sidenav-coming-next { display:grid; grid-template-columns:15px minmax(0,1fr); align-items:center; gap:2px 8px; padding:8px 12px; color:var(--color-neutral-500); font-size:var(--font-body); cursor:not-allowed; }
+.sidenav-coming-next small { grid-column:2; font-size:var(--font-small); }
+.app-sidenav-collapsed .sidenav-coming-next span, .app-sidenav-collapsed .sidenav-coming-next small { display:none; }
+
+.sidenav-self-service { display:block; padding:10px; color:var(--color-primary); font-size:var(--font-small); text-decoration:none; }
+.app-sidenav-collapsed .sidenav-self-service { display:none; }

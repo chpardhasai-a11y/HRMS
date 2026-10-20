@@ -1,9 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 
 @Catch(Prisma.PrismaClientKnownRequestError, Prisma.PrismaClientInitializationError, Prisma.PrismaClientValidationError)
 export class PrismaExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(PrismaExceptionFilter.name);
+
   catch(error: Prisma.PrismaClientKnownRequestError | Prisma.PrismaClientInitializationError | Prisma.PrismaClientValidationError, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();
     const { statusCode, message } = this.toHttpError(error);
@@ -39,6 +41,14 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
     if (error.code === 'P2025') {
       return { statusCode: HttpStatus.NOT_FOUND, message: 'Record not found.' };
+    }
+
+    if (error.code === 'P2021' || error.code === 'P2022') {
+      this.logger.error(`Database schema is out of date (${error.code}). Apply the backend Prisma migrations.`);
+      return {
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        message: 'The service is temporarily unavailable. Please contact your administrator.'
+      };
     }
 
     return {

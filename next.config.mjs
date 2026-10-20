@@ -5,7 +5,7 @@ import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig = (phase) => ({
-  distDir: phase === PHASE_DEVELOPMENT_SERVER ? '.next-dev' : '.next-build',
+  distDir: process.env.NEXT_DIST_DIR || (phase === PHASE_DEVELOPMENT_SERVER ? '.next-dev' : '.next-build'),
   experimental: {
     devtoolSegmentExplorer: false
   },

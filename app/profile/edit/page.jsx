@@ -35,77 +35,77 @@ const sectionNav = [
 
 const defaultFormState = {
   // Personal Info (Editable)
-  name: 'Rahul Sharma',
-  dob: '1993-08-12',
-  gender: 'Male',
-  maritalStatus: 'Married',
-  bloodGroup: 'B+',
-  email: 'rahul.sharma@company.com',
-  phone: '+91 98765 43210',
-  emergencyContact: 'Anita Sharma',
-  emergencyPhone: '+91 99887 77665',
+  name: '',
+  dob: '',
+  gender: '',
+  maritalStatus: '',
+  bloodGroup: '',
+  email: '',
+  phone: '',
+  emergencyContact: '',
+  emergencyPhone: '',
 
   // Employment (HR Controlled - Read Only)
-  code: 'EMP001245',
-  type: 'Permanent',
-  status: 'Active',
-  workMode: 'Hybrid',
-  joinDate: '2022-02-15',
-  noticePeriod: '60 days',
-  shift: 'General Shift',
-  grade: 'G6',
+  code: '',
+  type: '',
+  status: '',
+  workMode: '',
+  joinDate: '',
+  noticePeriod: '',
+  shift: '',
+  grade: '',
 
   // Organization Unit (HR Controlled - Read Only)
-  entity: 'Network18 Media',
-  department: 'Engineering',
-  team: 'HRMS Platform',
-  role: 'Senior Software Engineer',
-  manager: 'Sneha Iyer',
-  costCenter: 'ENG-PLT-204',
-  location: 'Mumbai HQ',
+  entity: '',
+  department: '',
+  team: '',
+  role: '',
+  manager: '',
+  costCenter: '',
+  location: '',
 
   // Location / Address (Editable)
-  city: 'Mumbai',
-  currentAddress: 'Flat 1402, Orchid Heights, Powai, Mumbai, Maharashtra 400076',
-  permanentAddress: '45 Green Park Road, Jaipur, Rajasthan 302004',
+  city: '',
+  currentAddress: '',
+  permanentAddress: '',
 
   // Previous Employment (Editable)
-  prevCompany: 'Zentra Systems',
-  prevRole: 'Product Engineer',
-  prevStartYear: '2020',
-  prevEndYear: '2022',
-  prevSummary: 'Built internal workflow tools and employee self-service modules.',
+  prevCompany: '',
+  prevRole: '',
+  prevStartYear: '',
+  prevEndYear: '',
+  prevSummary: '',
 
   // Documents (Editable - Goes for HR Approval)
-  aadhaarStatus: 'Verified',
-  panStatus: 'Verified',
-  offerLetterStatus: 'Signed',
+  aadhaarStatus: 'Pending',
+  panStatus: 'Pending',
+  offerLetterStatus: 'Pending',
   expLetterStatus: 'Pending',
-  documentUploadNote: 'Updated Aadhaar copy attached for verification.',
+  documentUploadNote: '',
 
   // Bank Details (Editable - Goes for Payroll Approval)
-  bankName: 'HDFC Bank',
-  accountType: 'Salary Account',
-  accountNumber: '•••• •••• 7421',
-  ifscCode: 'HDFC0001234',
+  bankName: '',
+  accountType: '',
+  accountNumber: '',
+  ifscCode: '',
 
   // Statutory Details (Editable - Goes for Compliance Approval)
-  pan: 'ABCDE••••F',
-  aadhaar: '•••• •••• 3921',
-  uan: '1004•••••921',
-  pfNumber: 'MH/BAN/••••/042',
+  pan: '',
+  aadhaar: '',
+  uan: '',
+  pfNumber: '',
 
   // Education (Editable)
-  qualification: 'B.Tech Computer Science',
-  institution: 'VJTI Mumbai',
-  eduStartYear: '2013',
-  eduEndYear: '2017',
+  qualification: '',
+  institution: '',
+  eduStartYear: '',
+  eduEndYear: '',
 
   // Salary (Payroll Controlled - Read Only)
-  annualCtc: '₹24,00,000',
-  monthlyGross: '₹2,00,000',
-  payFrequency: 'Monthly',
-  effectiveFrom: '2026-04-01'
+  annualCtc: '',
+  monthlyGross: '',
+  payFrequency: '',
+  effectiveFrom: ''
 };
 
 function Field({ label, children }) {
@@ -180,10 +180,10 @@ export default function EditProfilePage() {
       })
       .catch(() => setToast('Using sample edit data until the HRMS API is available.'));
 
-    getApprovals({ employeeCode: code, status: 'Pending' })
+    getApprovals({ employeeCode: code })
       .then((list) => {
         if (Array.isArray(list)) {
-          setPendingApprovals(list.map((item) => item.category));
+          setPendingApprovals(list.filter((item) => ['Pending', 'In Progress', 'Awaiting Configuration'].includes(item.status)).map((item) => item.category));
         }
       })
       .catch(() => {});

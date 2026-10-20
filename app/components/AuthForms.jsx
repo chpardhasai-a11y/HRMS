@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, KeyRound, LogIn, Mail } from 'lucide-react';
+import { firstOrganizationPage } from '../lib/accessControl';
 import { forgotPassword, loginUser, resetPassword } from '../lib/hrmsApi';
 
 const authStyles = `
@@ -141,7 +142,7 @@ export function AuthLogin({ audience, title, forgotHref }) {
         window.location.href = '/org-admin';
         return;
       }
-      window.location.href = '/';
+      window.location.href = firstOrganizationPage(data.user);
     } catch (error) {
       setMessage(error.message || 'Unable to login.');
     }

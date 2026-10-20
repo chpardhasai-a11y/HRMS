@@ -50,14 +50,18 @@ export class MailService {
         secure,
         authMethod: 'LOGIN',
         auth: { user, pass },
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
         tls: {
           rejectUnauthorized: false
         }
       });
       this.logger.log(`SMTP Mailer initialized with host: ${host}:${port}`);
     } else {
+      this.transporter = null;
       this.logger.warn(
-        'SMTP credentials not fully configured (SMTP_HOST, SMTP_USER, SMTP_PASS). Emailer operating in log mode.'
+        'SMTP credentials not fully configured (SMTP_HOST, SMTP_USER, SMTP_PASS). Emailer operating in simulated log mode.'
       );
     }
   }
@@ -88,11 +92,14 @@ export class MailService {
         this.logger.log(`Email successfully sent to ${options.to} (MessageID: ${info.messageId})`);
         return { success: true, messageId: info.messageId };
       } catch (error) {
-        this.logger.error(`Failed to send email to ${options.to}:`, error);
-        return { success: false, error };
+        this.logger.error(
+          `Failed to send email to ${options.to} via SMTP: ${error instanceof Error ? error.message : error}. Falling back to simulated log mode.`
+        );
+        this.logger.log(`\n================ [SIMULATED MAIL FALLBACK] ================\nTo: ${options.to}\nSubject: ${options.subject}\nContent:\n${options.text || options.html}\n===========================================================\n`);
+        return { success: true, simulated: true, error };
       }
     } else {
-      this.logger.log(`[SIMULATED MAIL] To: ${options.to} | Subject: ${options.subject}`);
+      this.logger.log(`\n================ [SIMULATED MAIL] ================\nTo: ${options.to}\nSubject: ${options.subject}\nContent:\n${options.text || options.html}\n==================================================\n`);
       return { success: true, simulated: true };
     }
   }

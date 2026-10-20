@@ -1,3 +1,4 @@
+import { AccessControlModule } from './access-control/access-control.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuditModule } from './audit/audit.module';
@@ -29,16 +30,19 @@ import { WorkShiftsModule } from './org-masters/work-shifts/work-shifts.module';
 import { HolidayCalendarsModule } from './org-masters/holiday-calendars/holiday-calendars.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { MailModule } from './mail/mail.module';
+import { WorkflowsModule } from './workflows/workflows.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', 'backend/.env'] }),
     PrismaModule,
+    AccessControlModule,
     UsersModule,
     CompaniesModule,
     AuthModule,
     EmployeesModule,
     MailModule,
+    WorkflowsModule,
     IndustriesModule,
     CountriesModule,
     CurrenciesModule,

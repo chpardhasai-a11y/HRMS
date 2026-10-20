@@ -85,11 +85,11 @@ export class EmployeesService {
         include: this.includeProfile()
       });
 
-      const tempPassword = `Hrms#${Math.floor(100000 + Math.random() * 900000)}`;
       const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+      const tempPassword = `Hrms#${otpCode}`;
       const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-      await this.prisma.user.upsert({
+      const account = await this.prisma.user.upsert({
         where: {
           companyId_email: {
             companyId: this.companyId(actor),
@@ -104,12 +104,14 @@ export class EmployeesService {
           employeeCode: employee.code,
           isActive: true
         },
-        update: {
-          passwordHash,
-          employeeCode: employee.code,
-          isActive: true
-        }
+        update: {}
       });
+      // Employee provisioning never changes an existing sign-in account.
+      // An administrator can explicitly link it through User Management.
+      if (account.passwordHash !== passwordHash) {
+        await this.audit(employee.code, actor, 'employee.created', null, employee);
+        return { ...employee, inviteDetails: null, accountAlreadyExists: true };
+      }
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3006';
       const loginUrl = `${frontendUrl}/onboard?email=${encodeURIComponent(employee.email)}&code=${employee.code}&otp=${otpCode}`;
@@ -133,7 +135,7 @@ export class EmployeesService {
         otpCode
       }).catch((err) => console.error('Failed to send onboarding email:', err));
 
-      await this.audit(employee.code, actor, 'employee.invited', null, { ...employee, inviteDetails });
+      await this.audit(employee.code, actor, 'employee.invited', null, employee);
 
       return {
         ...employee,
@@ -146,8 +148,8 @@ export class EmployeesService {
 
   async resendInvite(code: string, actor: RequestUser) {
     const employee = await this.findByCode(code, actor);
-    const tempPassword = `Hrms#${Math.floor(100000 + Math.random() * 900000)}`;
     const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+    const tempPassword = `Hrms#${otpCode}`;
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     await this.prisma.user.upsert({
@@ -155,7 +157,11 @@ export class EmployeesService {
         companyId_email: {
           companyId: this.companyId(actor),
           email: employee.email.toLowerCase()
-        }
+        },
+        role: UserRole.employee,
+        isActive: true,
+        passwordChangedAt: null,
+        OR: [{ employeeCode: employee.code }, { employeeCode: null }]
       },
       create: {
         companyId: this.companyId(actor),
@@ -168,7 +174,7 @@ export class EmployeesService {
       update: {
         passwordHash,
         employeeCode: employee.code,
-        isActive: true
+        authVersion: { increment: 1 }
       }
     });
 
@@ -194,7 +200,7 @@ export class EmployeesService {
       otpCode
     }).catch((err) => console.error('Failed to resend onboarding email:', err));
 
-    await this.audit(code, actor, 'employee.invite_resent', null, inviteDetails);
+    await this.audit(code, actor, 'employee.invite_resent', null, { sentToEmail: employee.email, employeeCode: employee.code });
 
     return {
       ...employee,
@@ -205,7 +211,7 @@ export class EmployeesService {
   async update(code: string, dto: UpdateEmployeeDto, actor: RequestUser) {
     const before = await this.findByCode(code, actor);
     
-    if (actor.role === UserRole.employee) {
+    if (actor.role === UserRole.employee && !actor.delegatedAccess) {
       if (actor.employeeCode !== code) {
         throw new ForbiddenException('Employees can only edit their own profile');
       }
@@ -499,7 +505,7 @@ export class EmployeesService {
   }
 
   private assertCanReadEmployee(code: string, user: RequestUser) {
-    if (user.role === UserRole.employee && user.employeeCode !== code) {
+    if (user.role === UserRole.employee && !user.delegatedAccess && user.employeeCode !== code) {
       throw new ForbiddenException('Employees can only access their own profile');
     }
   }

@@ -29,71 +29,72 @@ function employeeStatusClass(status) {
 }
 
 function profileSections(employee) {
+  const profile = employee.profile || {};
+
+  const bankPresent = Boolean(profile.bankDetails && Array.isArray(profile.bankDetails) && profile.bankDetails.length > 0);
+  const statPresent = Boolean(profile.statutoryDetails && Array.isArray(profile.statutoryDetails) && profile.statutoryDetails.length > 0);
+
   return [
     {
       title: 'Employment',
       icon: BriefcaseBusiness,
       items: [
-        ['Employment Type', employee.type],
+        ['Employment Type', employee.type || 'Permanent'],
         ['Employment Status', statusLabel(employee.status)],
-        ['Grade / Band', employee.grade],
+        ['Grade / Band', employee.grade || 'Not Provided'],
         ['Joining Date', formatDate(employee.joinDate)],
-        ['Probation Status', 'Confirmed']
+        ['Work Mode', profile.workMode || 'Not Provided']
       ]
     },
     {
       title: 'Organization',
       icon: Building2,
       items: [
-        ['Legal Entity', employee.entity],
-        ['Business Unit', employee.department],
-        ['Designation / Role', employee.role],
-        ['Reporting Manager', employee.manager],
-        ['Work Location', employee.location]
+        ['Legal Entity', employee.entity || 'Not Provided'],
+        ['Business Unit', profile.businessUnit || employee.department || 'Not Provided'],
+        ['Designation / Role', employee.role || 'Not Provided'],
+        ['Reporting Manager', employee.manager || 'Not Provided'],
+        ['Work Location', employee.location || 'Not Provided']
       ]
     },
     {
       title: 'Identity / Statutory / Bank',
       icon: Banknote,
       items: [
-        ['PAN', 'Verified'],
-        ['Aadhaar', 'Verified'],
-        ['UAN', 'Mapped'],
-        ['ESIC', employee.type === 'Contract' ? 'Not applicable' : 'Mapped'],
-        ['Bank Account', 'Verified and masked']
+        ['PAN', statPresent ? 'Submitted' : 'Pending Submission'],
+        ['Aadhaar', statPresent ? 'Submitted' : 'Pending Submission'],
+        ['UAN', statPresent ? 'Mapped' : 'Pending Mapping'],
+        ['ESIC', employee.type === 'Contract' ? 'Not applicable' : 'Pending Setup'],
+        ['Bank Account', bankPresent ? 'Submitted' : 'Pending Submission']
       ]
     },
     {
       title: 'Documents',
       icon: FileCheck2,
       items: [
-        ['Identity Proof', 'Verified'],
-        ['Address Proof', employee.documentNote],
-        ['Employment Contract', 'Signed'],
-        ['Education Certificate', 'Verified'],
-        ['Background Check', 'Completed']
+        ['Document Status', employee.documents?.length ? `${employee.documents.length} document(s)` : 'Pending Upload'],
+        ['Address Proof', employee.documentNote || 'No recent uploads'],
+        ['Identity Verification', employee.documents?.length ? 'Under Review' : 'Pending']
       ]
     },
     {
       title: 'Education / Experience',
       icon: GraduationCap,
       items: [
-        ['Highest Qualification', 'B.Tech Computer Science'],
-        ['Institute', 'VJTI Mumbai'],
-        ['Completion Year', '2017'],
-        ['Previous Experience', '5 years'],
-        ['Primary Skill', employee.department === 'Design' ? 'Product Design' : employee.department]
+        ['Highest Qualification', profile.education?.[0]?.[0] || 'Not Provided'],
+        ['Institute', profile.education?.[0]?.[1] || 'Not Provided'],
+        ['Completion Year', profile.education?.[0]?.[2] || 'Not Provided'],
+        ['Previous Company', profile.previousEmployment?.[0]?.[2] || 'Not Provided'],
+        ['Previous Role', profile.previousEmployment?.[0]?.[1] || 'Not Provided']
       ]
     },
     {
       title: 'Lifecycle',
       icon: CalendarDays,
       items: [
-        ['Record Created', employee.joinDate],
-        ['Last Updated', 'Today'],
-        ['Last Movement', 'Annual role review'],
-        ['Profile Readiness', '92%'],
-        ['Audit Status', 'Available']
+        ['Record Created', formatDate(employee.createdAt || employee.joinDate)],
+        ['Last Updated', formatDate(employee.updatedAt) || 'Today'],
+        ['Audit Logs', 'Available in system audit log']
       ]
     }
   ];

@@ -16,78 +16,15 @@ import Breadcrumbs from '../../components/Breadcrumbs';
 import DropdownSelect from '../../components/DropdownSelect';
 import { SkeletonCardList, SkeletonMetrics } from '../../components/SkeletonLoader';
 import { approveRequest, getApprovals, getCurrentCompany, rejectRequest } from '../../lib/hrmsApi';
+import { flow } from '../workflows/components/api';
+import Link from 'next/link';
 import '../org-admin.css';
-
-const initialApprovals = [
-  {
-    id: 'REQ-2026-0841',
-    employeeCode: 'EMP001245',
-    employeeName: 'Rahul Sharma',
-    department: 'Engineering',
-    role: 'Senior Software Engineer',
-    category: 'Bank Details',
-    submittedAt: '24 Sep 2026, 14:30',
-    status: 'Pending',
-    changes: [
-      { field: 'Bank Name', current: 'HDFC Bank', requested: 'ICICI Bank' },
-      { field: 'Account Number', current: '•••• •••• 7421', requested: '9876 5432 1098' },
-      { field: 'IFSC Code', current: 'HDFC0001234', requested: 'ICIC0000123' },
-      { field: 'Account Type', current: 'Salary Account', requested: 'Salary Account' }
-    ],
-    notes: 'Employee requested updated salary bank account details for upcoming payroll.'
-  },
-  {
-    id: 'REQ-2026-0842',
-    employeeCode: 'EMP001008',
-    employeeName: 'Sneha Iyer',
-    department: 'Engineering',
-    role: 'Engineering Manager',
-    category: 'Statutory Details',
-    submittedAt: '24 Sep 2026, 11:15',
-    status: 'Pending',
-    changes: [
-      { field: 'PAN Number', current: 'ABCDE••••F', requested: 'ABCDE5678G' },
-      { field: 'Aadhaar Number', current: '•••• •••• 3921', requested: '1234 5678 9012' }
-    ],
-    notes: 'Updated tax statutory identifiers following government document correction.'
-  },
-  {
-    id: 'REQ-2026-0843',
-    employeeCode: 'EMP001192',
-    employeeName: 'Diya Rao',
-    department: 'People Ops',
-    role: 'People Ops Lead',
-    category: 'Documents',
-    submittedAt: '23 Sep 2026, 16:45',
-    status: 'Pending',
-    changes: [
-      { field: 'Address Proof', current: 'Pending', requested: 'Uploaded: Address_Proof_Diya_Rao.pdf' }
-    ],
-    notes: 'Uploaded electricity bill copy for current residence verification.'
-  },
-  {
-    id: 'REQ-2026-0844',
-    employeeCode: 'EMP001055',
-    employeeName: 'Amitav Ghosh',
-    department: 'Finance',
-    role: 'Finance Manager',
-    category: 'Bank Details',
-    submittedAt: '22 Sep 2026, 09:30',
-    status: 'Pending',
-    changes: [
-      { field: 'Bank Name', current: 'State Bank of India', requested: 'Axis Bank' },
-      { field: 'Account Number', current: '•••• •••• 1102', requested: '4567 8901 2345' },
-      { field: 'IFSC Code', current: 'SBIN0000456', requested: 'UTIB0000789' }
-    ],
-    notes: 'Salary transfer bank account update.'
-  }
-];
 
 export default function ApprovalsPage() {
   const [activeCompany, setActiveCompany] = useState(null);
   const [approvals, setApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('Pending');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [rejectionTarget, setRejectionTarget] = useState(null);
@@ -100,8 +37,9 @@ export default function ApprovalsPage() {
       setIsLoading(true);
       const data = await getApprovals();
       setApprovals(Array.isArray(data) ? data : []);
-    } catch {
-      setApprovals(initialApprovals);
+    } catch (error) {
+      setApprovals([]);
+      setToast(error.message || 'Unable to load requests');
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +52,7 @@ export default function ApprovalsPage() {
     loadApprovalsData();
   }, []);
 
-  const pendingCount = approvals.filter((a) => a.status === 'Pending').length;
+  const pendingCount = approvals.filter((a) => ['Pending','In Progress','Awaiting Configuration'].includes(a.status)).length;
   const approvedCount = approvals.filter((a) => a.status === 'Approved').length;
   const rejectedCount = approvals.filter((a) => a.status === 'Rejected').length;
 
@@ -135,7 +73,7 @@ export default function ApprovalsPage() {
   async function handleApproveRequest(req) {
     try {
       await approveRequest(req.id);
-      setToast(`Approved request ${req.id} for ${req.employeeName} (${req.category}). Profile updated!`);
+      setToast(`Approval recorded for ${req.employeeName}. The workflow will apply changes after all required actions complete.`);
       await loadApprovalsData();
     } catch (err) {
       setToast(err.message || 'Unable to approve request.');
@@ -197,7 +135,8 @@ export default function ApprovalsPage() {
                   ariaLabel="Filter by status"
                   value={statusFilter}
                   options={[
-                    { value: 'Pending', label: 'Pending Review' },
+                    { value: 'Awaiting Configuration', label: 'Awaiting Configuration' },
+                    { value: 'In Progress', label: 'In Progress' },
                     { value: 'Approved', label: 'Approved' },
                     { value: 'Rejected', label: 'Rejected' },
                     { value: 'All', label: 'All Statuses' }
@@ -246,14 +185,14 @@ export default function ApprovalsPage() {
                         <span className="badge badge-neutral">{req.category}</span>
                         <span
                           className={`badge ${
-                            req.status === 'Pending'
+                            ['Pending', 'In Progress', 'Awaiting Configuration'].includes(req.status)
                               ? 'badge-warning'
                               : req.status === 'Approved'
                               ? 'badge-success'
                               : 'badge-danger'
                           }`}
                         >
-                          {req.status === 'Pending' ? '⏳ Pending' : req.status === 'Approved' ? '✅ Approved' : '❌ Rejected'}
+                          {req.status}
                         </span>
                       </div>
                     </header>
@@ -274,7 +213,7 @@ export default function ApprovalsPage() {
                         {req.rejectionNote ? `Rejection Reason: ${req.rejectionNote}` : req.notes}
                       </span>
 
-                      {req.status === 'Pending' ? (
+                      {req.status === 'Awaiting Configuration' ? (<div className="approval-card-actions"><Link href="/org-admin/workflows" className="btn btn-secondary">Configure workflow</Link><button className="btn btn-primary" onClick={async()=>{try{const result=await flow(`/hr/${req.id}/start`,'POST',{});setToast(result?'Workflow started':'Publish and bind a workflow first');await loadApprovalsData();}catch(error){setToast(error.message);}}}>Start configured workflow</button></div>) : req.canAct ? (
                         <div className="approval-actions">
                           <button
                             className="btn btn-secondary"
@@ -294,7 +233,7 @@ export default function ApprovalsPage() {
                         </div>
                       ) : (
                         <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 700 }}>
-                          Processed on {req.actionDate || req.submittedAt}
+                          {req.status === 'In Progress' ? 'Workflow in progress — view tasks in the Task Inbox' : `Processed on ${req.actionDate || req.submittedAt}`}
                         </span>
                       )}
                     </footer>
