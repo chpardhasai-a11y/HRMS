@@ -18,6 +18,7 @@ import {
 } from "./role-user.dto";
 import { delegablePermission, grantableKeys } from "./permission-context";
 import { PERMISSIONS } from "./permissions.catalog";
+import { roleRelationships } from "./catalog-relations";
 
 const userSelect = {
   id: true,
@@ -75,22 +76,44 @@ export class RoleUserService {
   }
   async roles(u: RequestUser, q: ListAccessDto) {
     const where = this.where(u, q, ["name", "description"]);
-    const [items, total] = await this.db.$transaction([
-      this.db.accessRole.findMany({
-        where,
-        include: { level: true, _count: { select: { users: true } } },
-        orderBy: [{ level: { number: "asc" } }, { name: "asc" }],
-        skip: (q.page - 1) * q.pageSize,
-        take: q.pageSize,
-      }),
-      this.db.accessRole.count({ where }),
-    ]);
-    return {
-      items,
-      total,
-      page: q.page,
-      pageSize: q.pageSize,
-    };
+    return this.db.$transaction(async (tx) => {
+      const [items, total, catalog] = await Promise.all([
+        tx.accessRole.findMany({
+          where,
+          include: { level: true, _count: { select: { users: true } } },
+          orderBy: [{ level: { number: "asc" } }, { name: "asc" }],
+          skip: (q.page - 1) * q.pageSize,
+          take: q.pageSize,
+        }),
+        tx.accessRole.count({ where }),
+        tx.accessRole.findMany({
+          where: { companyId: u.companyId },
+          select: { isActive: true, permissionKeys: true },
+        }),
+      ]);
+      const relationships = await roleRelationships(
+        tx,
+        u.companyId,
+        items.map((r) => r.id),
+      );
+      return {
+        items: items.map((r) => ({
+          ...r,
+          memberTeams: relationships.get(r.id)?.teams || [],
+        })),
+        total,
+        page: q.page,
+        pageSize: q.pageSize,
+        summary: {
+          totalRoles: catalog.length,
+          activeRoles: catalog.filter((r) => r.isActive).length,
+          assignedPermissions: catalog.reduce(
+            (n, r) => n + r.permissionKeys.length,
+            0,
+          ),
+        },
+      };
+    });
   }
   async role(id: string, u: RequestUser) {
     const r = await this.db.accessRole.findFirst({

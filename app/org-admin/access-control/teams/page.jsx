@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw, Layers, UsersRound, Pencil } from "lucide-react";
 import { apiRequest } from "../../../lib/hrmsApi";
 import {
   AccessPage,
+  AccessSelect,
+  SummaryCards,
   RowMenu,
   Alert,
   Dialog,
@@ -50,28 +52,70 @@ export default function TeamsPage() {
   }
   return (
     <AccessPage
-      title="Teams Management"
-      description="Manage department teams and their user memberships."
+      detail
+      catalog
+      title="Teams"
+      description="Manage organization teams, department relationships, and memberships."
       actions={
-        <button
-          className="btn btn-primary"
-          onClick={() =>
-            setEditing({
-              name: "",
-              code: "",
-              description: "",
-              departmentId: "",
-              isActive: true,
-            })
-          }
-        >
-          <Plus size={16} /> Add Team
-        </button>
+        <>
+          <button
+            className="btn btn-secondary"
+            disabled={list.loading}
+            onClick={list.reload}
+          >
+            <RefreshCw
+              size={16}
+              className={list.loading ? "access-spin" : ""}
+            />
+            Refresh
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() =>
+              setEditing({
+                name: "",
+                code: "",
+                description: "",
+                departmentId: "",
+                isActive: true,
+              })
+            }
+          >
+            <Plus size={16} /> New Team
+          </button>
+        </>
       }
     >
+      <SummaryCards
+        items={[
+          {
+            label: "Total Teams",
+            value: list.data.summary?.totalTeams,
+            icon: Layers,
+            horizontal: true,
+            valueFirst: true,
+            tone: "orange",
+          },
+          {
+            label: "Active Teams",
+            value: list.data.summary?.activeTeams,
+            icon: Layers,
+            horizontal: true,
+            valueFirst: true,
+          },
+          {
+            label: "Total Roles",
+            value: list.data.summary?.totalRoles,
+            icon: UsersRound,
+            horizontal: true,
+            valueFirst: true,
+            tone: "blue",
+          },
+        ]}
+      />
       <Alert>{error || list.error}</Alert>
       <Alert success>{notice}</Alert>
-      <div className="access-toolbar">
+      <div className="access-detail-filters">
         <SearchField
           label="Search teams"
           value={search}
@@ -93,85 +137,103 @@ export default function TeamsPage() {
           </button>
         )}
       </div>
-      <div className="access-table-wrap">
-        <table className="access-table access-records">
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>Department</th>
-              <th>Members</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <TableState
-              loading={list.loading}
-              error={list.error}
-              empty={!list.data.items.length}
-              columns={5}
-            />
-            {!list.loading &&
-              !list.error &&
-              list.data.items.map((t) => (
-                <tr key={t.id}>
-                  <td>
-                    <strong>{t.name}</strong>
-                    <p className="access-muted">{t.code}</p>
-                    {t.description && <p>{t.description}</p>}
-                  </td>
-                  <td>{t.department?.name || "—"}</td>
-                  <td>{t.memberCount}</td>
-                  <td>
-                    <StatusBadge active={t.isActive} />
-                  </td>
-                  <td>
-                    <div className="access-actions">
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => setEditing(t)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => setMembers(t)}
-                      >
-                        Manage Members
-                      </button>
-                      <RowMenu
-                        label={`Actions for ${t.name}`}
-                        items={[
-                          {
-                            label: t.isActive ? "Deactivate" : "Activate",
-                            disabled: busy,
-                            onClick: () =>
-                              mutate(
-                                `/teams/${t.id}/status`,
-                                "PATCH",
-                                { isActive: !t.isActive },
-                                "Team status updated.",
-                              ),
-                          },
-                          {
-                            label: "Delete",
-                            danger: true,
-                            disabled: busy,
-                            onClick: () => {
-                              setError("");
-                              setDeleting(t);
+      <section
+        className="access-detail-table access-catalog-table"
+        aria-labelledby="team-catalog-title"
+      >
+        <h2 id="team-catalog-title">Team Catalog</h2>
+        <div className="access-table-wrap">
+          <table
+            aria-busy={list.loading}
+            className="access-table access-records"
+          >
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Description</th>
+                <th title="Distinct roles assigned to this team's members; not a permission scope">
+                  Member Roles
+                </th>
+                <th>Members</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <TableState
+                loading={list.loading && !list.data.items.length}
+                error={list.error}
+                empty={!list.data.items.length}
+                columns={6}
+              />
+              {!list.error &&
+                list.data.items.map((t) => (
+                  <tr key={t.id}>
+                    <td>
+                      <strong>{t.name}</strong>
+                      <p className="access-muted">{t.code}</p>
+                      {t.department && (
+                        <p className="access-muted">{t.department.name}</p>
+                      )}
+                    </td>
+                    <td>{t.description || "—"}</td>
+                    <td>{t.memberRoleCount ?? "—"}</td>
+                    <td>{t.memberCount}</td>
+                    <td>
+                      <StatusBadge active={t.isActive} />
+                    </td>
+                    <td>
+                      <div className="access-actions">
+                        <button
+                          className="access-icon-action"
+                          aria-label="Edit"
+                          title={`Edit ${t.name}`}
+                          onClick={() => setEditing(t)}
+                        >
+                          <Pencil size={17} />
+                        </button>
+                        <button
+                          className="access-icon-action"
+                          aria-label="Manage Members"
+                          title={`Manage members of ${t.name}`}
+                          onClick={() => setMembers(t)}
+                        >
+                          <UsersRound size={17} />
+                        </button>
+                        <RowMenu
+                          label={`Actions for ${t.name}`}
+                          items={[
+                            {
+                              label: t.isActive ? "Deactivate" : "Activate",
+                              disabled: busy,
+                              onClick: () =>
+                                mutate(
+                                  `/teams/${t.id}/status`,
+                                  "PATCH",
+                                  { isActive: !t.isActive },
+                                  "Team status updated.",
+                                ),
                             },
-                          },
-                        ]}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-      <Pager page={page} total={list.data.total} onChange={setPage} />
+                            {
+                              label: "Delete",
+                              danger: true,
+                              disabled: busy,
+                              onClick: () => {
+                                setError("");
+                                setDeleting(t);
+                              },
+                            },
+                          ]}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+        <Pager page={page} total={list.data.total} onChange={setPage} />
+      </section>
       {editing && (
         <TeamForm
           team={editing}
@@ -300,19 +362,19 @@ function TeamForm({ team, onClose, onSaved }) {
         </label>
         <label className="access-field">
           Department
-          <select
+          <AccessSelect
+            ariaLabel="Department"
             disabled={loading}
             value={form.departmentId || ""}
-            onChange={(e) => set("departmentId", e.target.value)}
-          >
-            <option value="">No department</option>
-            {departments.map((d) => (
-              <option value={d.id} key={d.id}>
-                {d.name}
-                {!d.isActive ? " (Inactive)" : ""}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => set("departmentId", value)}
+            options={[
+              { value: "", label: "No department" },
+              ...departments.map((d) => ({
+                value: d.id,
+                label: d.name + (!d.isActive ? " (Inactive)" : ""),
+              })),
+            ]}
+          />
         </label>
         <label className="access-field">
           Description

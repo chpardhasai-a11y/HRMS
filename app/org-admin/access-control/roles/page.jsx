@@ -1,9 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Shield,
+  UsersRound,
+  Pencil,
+} from "lucide-react";
 import Link from "next/link";
 import {
   AccessPage,
+  AccessSelect,
+  SummaryCards,
+  LevelBadge,
   Alert,
   Dialog,
   Pager,
@@ -59,33 +69,69 @@ export default function RolesPage() {
   }
   return (
     <AccessPage
-      title="Roles Management"
-      description="Assign levels and explicit permissions to custom organization roles."
+      detail
+      catalog
+      title="Roles"
+      description="Maintain role definitions and module-level permission bundles."
       actions={
-        <button
-          className="btn btn-primary"
-          onClick={() =>
-            setEditing({
-              name: "",
-              description: "",
-              levelId: "",
-              permissionKeys: [],
-              isActive: true,
-            })
-          }
-        >
-          <Plus size={16} /> Add Role
-        </button>
+        <>
+          <button
+            className="btn btn-secondary"
+            disabled={list.loading}
+            onClick={list.reload}
+          >
+            <RefreshCw
+              size={16}
+              className={list.loading ? "access-spin" : ""}
+            />
+            Refresh
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() =>
+              setEditing({
+                name: "",
+                description: "",
+                levelId: "",
+                permissionKeys: [],
+                isActive: true,
+              })
+            }
+          >
+            <Plus size={16} /> New Role
+          </button>
+        </>
       }
     >
-      <div className="access-note">
-        Users can hold multiple roles. Their active role permissions are
-        combined. L1 is highest; levels do not inherit permissions. Organization
-        administrators retain full access.
-      </div>
+      <SummaryCards
+        items={[
+          {
+            label: "Total Roles",
+            value: list.data.summary?.totalRoles,
+            icon: ShieldCheck,
+            horizontal: true,
+            valueFirst: true,
+          },
+          {
+            label: "Active Roles",
+            value: list.data.summary?.activeRoles,
+            icon: UsersRound,
+            horizontal: true,
+            valueFirst: true,
+            tone: "blue",
+          },
+          {
+            label: "Assigned Permissions",
+            value: list.data.summary?.assignedPermissions,
+            icon: Shield,
+            horizontal: true,
+            valueFirst: true,
+          },
+        ]}
+      />
       <Alert>{error || list.error}</Alert>
       <Alert success>{notice}</Alert>
-      <div className="access-toolbar">
+      <div className="access-detail-filters">
         <SearchField
           label="Search roles"
           value={search}
@@ -107,71 +153,96 @@ export default function RolesPage() {
           </button>
         )}
       </div>
-      <div className="access-table-wrap">
-        <table className="access-table access-records">
-          <thead>
-            <tr>
-              <th>Role</th>
-              <th>Level</th>
-              <th>Permissions</th>
-              <th>Users</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <TableState
-              loading={list.loading}
-              error={list.error}
-              empty={!list.data.items.length}
-              columns={6}
-            />
-            {!list.loading &&
-              !list.error &&
-              list.data.items.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <strong>{r.name}</strong>
-                    {r.description && <p>{r.description}</p>}
-                  </td>
-                  <td>
-                    L{r.level.number}
-                    {r.level.displayName && (
-                      <p className="access-muted">{r.level.displayName}</p>
-                    )}
-                    {!r.level.isActive && <small>Level inactive</small>}
-                  </td>
-                  <td>{r.permissionKeys.length}</td>
-                  <td>{r._count.users}</td>
-                  <td>
-                    <StatusBadge active={r.isActive} />
-                  </td>
-                  <td>
-                    <div className="access-actions">
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => setEditing(r)}
-                      >
-                        Edit Role
-                      </button>
-                      <RowMenu
-                        label={`Actions for ${r.name}`}
-                        items={[
-                          {
-                            label: r.isActive ? "Deactivate" : "Activate",
-                            disabled: busy,
-                            onClick: () => change(r),
-                          },
-                        ]}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-      <Pager page={page} total={list.data.total} onChange={setPage} />
+      <section
+        className="access-detail-table access-catalog-table"
+        aria-labelledby="role-catalog-title"
+      >
+        <h2 id="role-catalog-title">Role Catalog</h2>
+        <div className="access-table-wrap">
+          <table
+            aria-busy={list.loading}
+            className="access-table access-records"
+          >
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th title="Teams of users assigned to this role; team membership does not scope permissions">
+                  Member Teams
+                </th>
+                <th>Scope / Level</th>
+                <th>Permissions</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <TableState
+                loading={list.loading && !list.data.items.length}
+                error={list.error}
+                empty={!list.data.items.length}
+                columns={6}
+              />
+              {!list.error &&
+                list.data.items.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <strong>{r.name}</strong>
+                      {r.description && <p>{r.description}</p>}
+                    </td>
+                    <td>
+                      {r.memberTeams?.length
+                        ? r.memberTeams
+                            .map(
+                              (t) => t.name + (t.isActive ? "" : " (Inactive)"),
+                            )
+                            .join(", ")
+                        : "—"}
+                    </td>
+                    <td>
+                      <LevelBadge number={r.level.number} />
+                      {r.level.displayName && (
+                        <p className="access-muted">{r.level.displayName}</p>
+                      )}
+                      {!r.level.isActive && <small>Level inactive</small>}
+                    </td>
+                    <td>{r.permissionKeys.length}</td>
+                    <td>
+                      <StatusBadge active={r.isActive} />
+                    </td>
+                    <td>
+                      <div className="access-actions">
+                        <button
+                          className="access-icon-action"
+                          aria-label="Edit Role"
+                          title={`Edit ${r.name}`}
+                          onClick={() => setEditing(r)}
+                        >
+                          <Pencil size={17} />
+                        </button>
+                        <RowMenu
+                          label={`Actions for ${r.name}`}
+                          items={[
+                            {
+                              label: r.isActive ? "Deactivate" : "Activate",
+                              disabled: busy,
+                              onClick: () => change(r),
+                            },
+                          ]}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+        <Pager page={page} total={list.data.total} onChange={setPage} />
+      </section>
+      <p className="access-readonly-caption">
+        Users can hold multiple roles. Their permissions are combined. L1 is
+        highest; levels and team memberships do not grant or inherit
+        permissions.
+      </p>
       {editing && (
         <RoleForm
           initial={editing}
@@ -235,6 +306,10 @@ function RoleForm({ initial, onClose, onSaved }) {
     );
   async function save(e) {
     e.preventDefault();
+    if (!form.levelId) {
+      setError("Select a level before saving the role.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -280,23 +355,21 @@ function RoleForm({ initial, onClose, onSaved }) {
           </label>
           <label className="access-field">
             Level
-            <select
-              aria-label="Level"
-              required
+            <AccessSelect
+              ariaLabel="Level"
+              placeholder="Select a level"
               value={form.levelId}
-              onChange={(e) => change("levelId", e.target.value)}
-            >
-              <option value="">Select a level</option>
-              {options.levels
-                .filter((l) => l.isActive || l.id === form.levelId)
-                .map((l) => (
-                  <option key={l.id} value={l.id}>
-                    L{l.number}
-                    {l.displayName ? ` · ${l.displayName}` : ""}
-                    {!l.isActive ? " (Inactive)" : ""}
-                  </option>
-                ))}
-            </select>
+              onChange={(value) => change("levelId", value)}
+              options={[
+                { value: "", label: "Select a level" },
+                ...options.levels
+                  .filter((l) => l.isActive || l.id === form.levelId)
+                  .map((l) => ({
+                    value: l.id,
+                    label: `L${l.number}${l.displayName ? ` · ${l.displayName}` : ""}${!l.isActive ? " (Inactive)" : ""}`,
+                  })),
+              ]}
+            />
           </label>
           {!options.levels.some((l) => l.isActive) && (
             <div className="access-note">
@@ -340,18 +413,17 @@ function RoleForm({ initial, onClose, onSaved }) {
                 value={search}
                 onChange={setSearch}
               />
-              <select
-                aria-label="Permission module"
+              <AccessSelect
+                ariaLabel="Permission module"
                 value={module}
-                onChange={(e) => setModule(e.target.value)}
-              >
-                <option value="">All modules</option>
-                {[...new Set(available.map((p) => p.module))]
-                  .sort()
-                  .map((m) => (
-                    <option key={m}>{m}</option>
-                  ))}
-              </select>
+                onChange={setModule}
+                options={[
+                  { value: "", label: "All modules" },
+                  ...[...new Set(available.map((p) => p.module))]
+                    .sort()
+                    .map((value) => ({ value, label: value })),
+                ]}
+              />
             </div>
             <label className="access-check">
               <input

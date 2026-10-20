@@ -7,6 +7,7 @@ import {
   UpdateLevelDto,
 } from "./access-control.dto";
 import { PERMISSIONS } from "./permissions.catalog";
+import { roleRelationships } from "./catalog-relations";
 
 @Injectable()
 export class AccessControlService {
@@ -53,21 +54,56 @@ export class AccessControlService {
           }
         : {}),
     };
-    const [rows, total] = await this.db.$transaction([
-      this.db.accessLevel.findMany({
-        where,
-        orderBy: { number: "asc" },
-        skip: (q.page - 1) * q.pageSize,
-        take: q.pageSize,
-      }),
-      this.db.accessLevel.count({ where }),
-    ]);
-    return {
-      items: rows.map((r) => ({ ...r, code: `L${r.number}` })),
-      total,
-      page: q.page,
-      pageSize: q.pageSize,
-    };
+    return this.db.$transaction(async (tx) => {
+      const [rows, total] = await Promise.all([
+        tx.accessLevel.findMany({
+          where,
+          orderBy: { number: "asc" },
+          skip: (q.page - 1) * q.pageSize,
+          take: q.pageSize,
+        }),
+        tx.accessLevel.count({ where }),
+      ]);
+      const roles = await tx.accessRole.findMany({
+        where: {
+          companyId: user.companyId,
+          levelId: { in: rows.map((r) => r.id) },
+        },
+        select: { id: true, levelId: true },
+      });
+      const relationships = await roleRelationships(
+        tx,
+        user.companyId,
+        roles.map((r) => r.id),
+      );
+      return {
+        items: rows.map((r) => {
+          const linkedRoles = roles.filter((role) => role.levelId === r.id),
+            teams = new Map<
+              string,
+              { id: string; name: string; isActive: boolean }
+            >();
+          const activeUsers = new Set<string>();
+          for (const role of linkedRoles) {
+            const relation = relationships.get(role.id);
+            relation?.teams.forEach((t) => teams.set(t.id, t));
+            relation?.activeUserIds.forEach((id) => activeUsers.add(id));
+          }
+          return {
+            ...r,
+            code: `L${r.number}`,
+            roleCount: linkedRoles.length,
+            activeUserCount: activeUsers.size,
+            teams: [...teams.values()].sort((a, b) =>
+              a.name.localeCompare(b.name),
+            ),
+          };
+        }),
+        total,
+        page: q.page,
+        pageSize: q.pageSize,
+      };
+    });
   }
   async saveLevel(
     user: RequestUser,

@@ -709,6 +709,68 @@ async function main() {
             },
           ],
         });
+        const reportingLevel = await db.accessLevel.create({
+          data: {
+            companyId: company.id,
+            number: 3,
+            displayName: "Reporting level",
+          },
+        });
+        const reportingRoles = await Promise.all(
+          [1, 2].map((n) =>
+            db.accessRole.create({
+              data: {
+                companyId: company.id,
+                levelId: reportingLevel.id,
+                name: `Catalog reporting ${n}`,
+                permissionKeys: n === 1 ? [readKey] : [],
+              },
+            }),
+          ),
+        );
+        await db.accessUserRole.createMany({
+          data: reportingRoles.map((r) => ({
+            companyId: company.id,
+            userId: user.id,
+            roleId: r.id,
+          })),
+        });
+        const catalog = await req(
+          "/access-control/roles?search=Catalog%20reporting",
+        );
+        assert.equal(catalog.data.total, 2);
+        assert.ok(catalog.data.summary.totalRoles > catalog.data.total);
+        assert.ok(catalog.data.summary.assignedPermissions >= 1);
+        assert.ok(
+          catalog.data.items.every(
+            (r: any) =>
+              r.memberTeams.length === 1 && r.memberTeams[0].id === ownTeam.id,
+          ),
+        );
+        const teamCatalog = await req(
+          "/access-control/teams?search=Detail%20team",
+        );
+        assert.ok(teamCatalog.data.items[0].memberRoleCount >= 2);
+        assert.equal(
+          teamCatalog.data.summary.totalRoles,
+          catalog.data.summary.totalRoles,
+        );
+        const hierarchy = await req("/access-control/levels?search=L3");
+        assert.equal(hierarchy.data.items[0].roleCount, 2);
+        assert.equal(hierarchy.data.items[0].activeUserCount, 1);
+        assert.deepEqual(
+          hierarchy.data.items[0].teams.map((t: any) => t.id),
+          [ownTeam.id],
+        );
+        for (const r of reportingRoles) {
+          await req(`/access-control/roles/${r.id}/status`, "PATCH", {
+            isActive: false,
+            revision: r.revision,
+          });
+        }
+        const after = await req("/access-control/levels?search=L3");
+        assert.equal(after.data.items[0].activeUserCount, 0);
+        assert.equal(after.data.items[0].roleCount, 2);
         const recentUser = await db.user.create({
           data: {
             companyId: company.id,

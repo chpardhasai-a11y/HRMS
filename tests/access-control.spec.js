@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseDropdown } from "./helpers/dropdown";
 import { readFileSync } from "node:fs";
 const fixture = JSON.parse(
   readFileSync("/tmp/hrms-access-qa-fixture.json", "utf8"),
@@ -36,7 +37,7 @@ test("permissions remain read-only and Access Control uses shared navigation", a
       .locator(".access-page")
       .getByRole("button", { name: /Add|Edit|Delete/ }),
   ).toHaveCount(0);
-  await page.getByLabel("Filter by module").selectOption("Workflows");
+  await chooseDropdown(page, "Filter by module", "Workflows");
   await expect(page.locator(".access-table tbody tr").first()).toContainText(
     "Workflows",
   );
@@ -45,7 +46,7 @@ test("permissions remain read-only and Access Control uses shared navigation", a
     page.getByText("No records found.", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("Search permissions").fill("");
-  await page.getByLabel("Filter by module").selectOption("");
+  await chooseDropdown(page, "Filter by module", "");
   await page.getByRole("button", { name: "Next page", exact: true }).click();
   await expect(page.getByText(/Page 2 of/)).toBeVisible();
 });
@@ -54,7 +55,7 @@ test("levels create, validate duplicates, reopen and deactivate", async ({
 }) => {
   const number = 100000 + (Date.now() % 10000000);
   await page.goto("/org-admin/access-control/levels");
-  await page.getByRole("button", { name: "Add Level", exact: true }).click();
+  await page.getByRole("button", { name: "New Level", exact: true }).click();
   await page.getByLabel("Level number", { exact: false }).fill(String(number));
   await page.getByLabel("Display name", { exact: true }).fill("QA lead");
   await page.getByRole("button", { name: "Save Level", exact: true }).click();
@@ -78,7 +79,7 @@ test("levels create, validate duplicates, reopen and deactivate", async ({
     .click();
   await page.getByRole("menuitem", { name: "Deactivate", exact: true }).click();
   await expect(row).toContainText("Inactive");
-  await page.getByRole("button", { name: "Add Level", exact: true }).click();
+  await page.getByRole("button", { name: "New Level", exact: true }).click();
   await page.getByLabel("Level number", { exact: false }).fill(String(number));
   await page.getByRole("button", { name: "Save Level", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
@@ -91,7 +92,7 @@ test("teams redirect, save, add/remove members and protect referenced teams", as
   const name = `Browser team ${Date.now()}`;
   await page.goto("/org-admin/masters/teams");
   await expect(page).toHaveURL(/access-control\/teams$/);
-  await page.getByRole("button", { name: "Add Team", exact: true }).click();
+  await page.getByRole("button", { name: "New Team", exact: true }).click();
   await page.getByLabel("Team name", { exact: true }).fill(name);
   await page.getByRole("button", { name: "Save Team", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -172,7 +173,7 @@ test("permissions, levels and teams fit desktop, tablet and mobile", async ({
       });
     }
   }
-  await page.getByRole("button", { name: "Add Team", exact: true }).click();
+  await page.getByRole("button", { name: "New Team", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(
     await page.evaluate(
@@ -349,7 +350,7 @@ test("mobile navigation starts compact and expands the shared HRMS menu", async 
     .getByRole("link", { name: "Teams Management", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Teams Management", exact: true }),
+    page.getByRole("heading", { name: "Teams", exact: true }),
   ).toBeVisible();
   await expect(nav).toBeHidden();
   await page
@@ -381,7 +382,7 @@ test("permission action filters preserve catalog totals and expose complete rest
       .filter({ hasText: "Total permissions" })
       .locator("strong"),
   ).toHaveText(String(catalog.catalogTotal));
-  await page.getByLabel("Filter by action").selectOption(catalog.actions[0]);
+  await chooseDropdown(page, "Filter by action", catalog.actions[0]);
   const expected = await (
     await request.get(
       `${api}/access-control/permissions?action=${encodeURIComponent(catalog.actions[0])}`,
@@ -411,4 +412,178 @@ test("permission action filters preserve catalog totals and expose complete rest
       .filter({ hasText: "Total permissions" })
       .locator("strong"),
   ).toHaveText(String(catalog.catalogTotal));
+});
+
+test("team and role catalogs show live organization summaries while filtering", async ({
+  page,
+  request,
+}) => {
+  const headers = { Authorization: `Bearer ${session.accessToken}` };
+  for (const [section, title, heading, labels] of [
+    [
+      "teams",
+      "Teams",
+      "Team Catalog",
+      [
+        ["Total Teams", "totalTeams"],
+        ["Active Teams", "activeTeams"],
+        ["Total Roles", "totalRoles"],
+      ],
+    ],
+    [
+      "roles",
+      "Roles",
+      "Role Catalog",
+      [
+        ["Total Roles", "totalRoles"],
+        ["Active Roles", "activeRoles"],
+        ["Assigned Permissions", "assignedPermissions"],
+      ],
+    ],
+  ]) {
+    const data = await (
+      await request.get(`${api}/access-control/${section}`, { headers })
+    ).json();
+    await page.goto(`/org-admin/access-control/${section}`);
+    await expect(
+      page.getByRole("heading", { name: title, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: heading, exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".app-sidenav")).toHaveCount(1);
+    for (const [label, key] of labels)
+      await expect(
+        page
+          .locator(".access-detail-stat")
+          .filter({ has: page.getByText(label, { exact: true }) })
+          .locator("strong"),
+      ).toHaveText(String(data.summary[key]));
+    await page
+      .getByLabel(`Search ${section}`, { exact: true })
+      .fill("no-such-catalog-record");
+    await expect(
+      page.getByText("No records found.", { exact: true }),
+    ).toBeVisible();
+    for (const [label, key] of labels)
+      await expect(
+        page
+          .locator(".access-detail-stat")
+          .filter({ has: page.getByText(label, { exact: true }) })
+          .locator("strong"),
+      ).toHaveText(String(data.summary[key]));
+    await page.getByLabel(`Search ${section}`, { exact: true }).fill("");
+    await page.getByRole("button", { name: "Refresh", exact: true }).click();
+    await expect(
+      page.getByRole("alert").filter({ hasText: /Unable|Failed/ }),
+    ).toHaveCount(0);
+  }
+});
+
+test("catalog references fit desktop, tablet and mobile with usable creation dialogs", async ({
+  page,
+}) => {
+  for (const [device, width, height] of [
+    ["desktop", 1920, 1080],
+    ["tablet", 820, 1180],
+    ["mobile", 390, 844],
+  ]) {
+    await page.setViewportSize({ width, height });
+    for (const [section, title, newLabel] of [
+      ["teams", "Teams", "New Team"],
+      ["levels", "Levels", "New Level"],
+      ["roles", "Roles", "New Role"],
+    ]) {
+      await page.goto(`/org-admin/access-control/${section}`);
+      await expect(
+        page.getByRole("heading", { name: title, exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.locator(".access-table tbody tr").first(),
+      ).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        `${device} ${section}`,
+      ).toBeTruthy();
+      await expect(
+        page.getByRole("columnheader", { name: "Clusters", exact: true }),
+      ).toHaveCount(0);
+      if (width <= 980)
+        expect(
+          await page
+            .locator(".access-detail-breadcrumb")
+            .evaluate((el) => el.getBoundingClientRect().top),
+          `${device} ${section} header position`,
+        ).toBeLessThan(120);
+      await page.screenshot({
+        path: `/tmp/hrms-catalog-${section}-${device}.png`,
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: newLabel, exact: true }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expect(
+        page
+          .getByRole("dialog")
+          .getByRole("button", { name: "Close dialog", exact: true }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: `/tmp/hrms-catalog-${section}-dialog-${device}.png`,
+      });
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
+  }
+});
+
+test("background user filtering preserves the selected row menu and focus", async ({
+  page,
+}) => {
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  let held = false;
+  await page.route("**/access-control/users?**", async (route) => {
+    if (
+      new URL(route.request().url()).searchParams.get("search") ===
+      fixture.memberEmail
+    ) {
+      held = true;
+      await gate;
+    }
+    await route.continue();
+  });
+  try {
+    await page.goto("/org-admin/access-control/users");
+    const row = page
+      .locator(".access-table tbody tr")
+      .filter({ hasText: fixture.memberEmail });
+    await expect(row).toBeVisible();
+    await page
+      .getByLabel("Search users", { exact: true })
+      .fill(fixture.memberEmail);
+    await row
+      .getByRole("button", {
+        name: `Actions for ${fixture.memberEmail}`,
+        exact: true,
+      })
+      .click();
+    await expect.poll(() => held).toBe(true);
+    await expect(page.getByRole("menu")).toBeVisible();
+    release();
+    await expect(page.locator(".access-table")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    await expect(page.locator(".access-table tbody tr")).toHaveCount(1);
+    await expect(page.getByRole("menu")).toBeVisible();
+    await page
+      .getByRole("menuitem", { name: "View Access", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  } finally {
+    release();
+  }
 });

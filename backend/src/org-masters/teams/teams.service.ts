@@ -1,3 +1,4 @@
+import { teamRoleCounts } from "../../access-control/catalog-relations";
 import {
   BadRequestException,
   ConflictException,
@@ -89,14 +90,30 @@ export class TeamsService {
       },
       _count: true,
     });
+    const [roleCounts, totalTeams, activeTeams, totalRoles] = await Promise.all(
+      [
+        teamRoleCounts(
+          this.prisma,
+          user.companyId,
+          rows.map((r) => r.id),
+        ),
+        this.prisma.team.count({ where: { companyId: user.companyId } }),
+        this.prisma.team.count({
+          where: { companyId: user.companyId, isActive: true },
+        }),
+        this.prisma.accessRole.count({ where: { companyId: user.companyId } }),
+      ],
+    );
     return {
       items: rows.map((r) => ({
         ...r,
         memberCount: counts.find((c) => c.referenceId === r.id)?._count || 0,
+        memberRoleCount: roleCounts.get(r.id) || 0,
       })),
       total,
       page: q.page,
       pageSize: q.pageSize,
+      summary: { totalTeams, activeTeams, totalRoles },
     };
   }
   async findOne(id: string, user: RequestUser, tx: any = this.prisma) {

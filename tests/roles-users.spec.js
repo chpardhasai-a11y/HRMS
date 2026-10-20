@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseDropdown } from "./helpers/dropdown";
 import { readFileSync } from "node:fs";
 const fixture = JSON.parse(
   readFileSync("/tmp/hrms-roles-users-qa-fixture.json", "utf8"),
@@ -27,12 +28,12 @@ test("create, reopen and edit a level-linked role with real permissions", async 
 }) => {
   await page.goto("/org-admin/access-control/roles");
   await expect(
-    page.getByRole("heading", { name: "Roles Management", exact: true }),
+    page.getByRole("heading", { name: "Roles", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".sidenav-coming-next")).toHaveCount(0);
-  await page.getByRole("button", { name: "Add Role", exact: true }).click();
+  await page.getByRole("button", { name: "New Role", exact: true }).click();
   await page.getByLabel("Role name", { exact: true }).fill(roleName);
-  await page.getByLabel("Level", { exact: true }).selectOption(fixture.levelId);
+  await chooseDropdown(page, "Level", fixture.levelId);
   await page
     .getByLabel("Search role permissions")
     .fill("org-masters.departments.findAll");
@@ -197,7 +198,7 @@ test("roles and users follow HRMS styles and fit desktop, tablet and mobile", as
       await page.screenshot({ path: `/tmp/hrms-${section}-${device}.png` });
       await page
         .getByRole("button", {
-          name: section === "roles" ? "Add Role" : "Add User",
+          name: section === "roles" ? "New Role" : "Add User",
           exact: true,
         })
         .click();
@@ -245,7 +246,7 @@ test("user summary, role filters, recent sign-ins and CSV export use real data",
   ).toHaveText(String(data.summary.inactive));
   const role = data.roleOptions.find((r) => r.name === roleName);
   expect(role).toBeTruthy();
-  await page.getByLabel("Filter users by role").selectOption(role.id);
+  await chooseDropdown(page, "Filter users by role", role.id);
   await expect(page.locator(".access-table tbody tr")).toHaveCount(1);
   await expect(page.locator(".access-table tbody tr")).toContainText(
     memberEmail,
@@ -272,9 +273,7 @@ test("user summary, role filters, recent sign-ins and CSV export use real data",
   await expect(page.locator(".access-table tbody tr")).toContainText(
     memberEmail,
   );
-  await page
-    .getByLabel("Filter users by role")
-    .selectOption("account:org_admin");
+  await chooseDropdown(page, "Filter users by role", "account:org_admin");
   await expect(page.locator(".access-table tbody tr")).toContainText(
     fixture.email,
   );

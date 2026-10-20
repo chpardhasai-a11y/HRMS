@@ -13,6 +13,7 @@ import {
 import { getStoredUser } from "../../../lib/hrmsApi";
 import {
   AccessPage,
+  AccessSelect,
   Alert,
   Dialog,
   Pager,
@@ -186,30 +187,32 @@ export default function UsersPage() {
             setPage(1);
           }}
         />
-        <select
-          aria-label="Filter users by role"
+        <AccessSelect
+          ariaLabel="Filter users by role"
           value={roleFilter}
-          onChange={(e) => {
-            setRoleFilter(e.target.value);
+          onChange={(value) => {
+            setRoleFilter(value);
             setPage(1);
           }}
-        >
-          <option value="">All roles</option>
-          <optgroup label="Account types">
-            <option value="account:employee">Employee</option>
-            <option value="account:org_admin">
-              Organization administrator
-            </option>
-          </optgroup>
-          <optgroup label="Custom roles">
-            {list.data.roleOptions?.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-                {!r.isActive ? " (Inactive)" : ""}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+          options={[
+            { value: "", label: "All roles" },
+            {
+              value: "account:employee",
+              label: "Employee",
+              group: "Account types",
+            },
+            {
+              value: "account:org_admin",
+              label: "Organization administrator",
+              group: "Account types",
+            },
+            ...(list.data.roleOptions || []).map((r) => ({
+              value: r.id,
+              label: r.name + (!r.isActive ? " (Inactive)" : ""),
+              group: "Custom roles",
+            })),
+          ]}
+        />
         {list.error && (
           <button className="btn btn-secondary" onClick={list.reload}>
             Retry
@@ -241,7 +244,10 @@ export default function UsersPage() {
       )}
       <div className="access-detail-table">
         <div className="access-table-wrap">
-          <table className="access-table access-users-table">
+          <table
+            aria-busy={list.loading}
+            className="access-table access-users-table"
+          >
             <thead>
               <tr>
                 <th>Name</th>
@@ -255,13 +261,12 @@ export default function UsersPage() {
             </thead>
             <tbody>
               <TableState
-                loading={list.loading}
+                loading={list.loading && !list.data.items.length}
                 error={list.error}
                 empty={!list.data.items.length}
                 columns={7}
               />
-              {!list.loading &&
-                !list.error &&
+              {!list.error &&
                 list.data.items.map((u) => (
                   <tr key={u.id}>
                     <td>
@@ -511,14 +516,16 @@ function UserForm({ initial, self, onClose, onSaved }) {
           </label>
           <label className="access-field">
             Account type
-            <select
+            <AccessSelect
+              ariaLabel="Account type"
               value={form.role}
               disabled={self}
-              onChange={(e) => change("role", e.target.value)}
-            >
-              <option value="employee">Employee</option>
-              <option value="org_admin">Organization administrator</option>
-            </select>
+              onChange={(value) => change("role", value)}
+              options={[
+                { value: "employee", label: "Employee" },
+                { value: "org_admin", label: "Organization administrator" },
+              ]}
+            />
           </label>
           <label className="access-check">
             <input

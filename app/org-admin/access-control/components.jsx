@@ -1,5 +1,12 @@
 "use client";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,6 +27,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import DropdownSelect from "../../components/DropdownSelect";
 import { apiRequest } from "../../lib/hrmsApi";
 
 export const accessApi = (path, method, data) =>
@@ -83,11 +91,12 @@ export function AccessPage({
   children,
   overview = false,
   detail = false,
+  catalog = false,
 }) {
   const pathname = usePathname();
   return (
     <main
-      className={`access-page ${overview ? "access-overview" : ""} ${detail ? "access-detail" : ""}`}
+      className={`access-page ${overview ? "access-overview" : ""} ${detail ? "access-detail" : ""} ${catalog ? "access-catalog" : ""}`}
     >
       <div className="access-shell">
         {detail ? (
@@ -229,20 +238,31 @@ export function RowMenu({ label, items }) {
       window.removeEventListener("resize", resize);
     };
   }, [position]);
-  function toggle() {
-    if (position) {
-      setPosition(null);
-      return;
-    }
+  function measure() {
     const r = trigger.current.getBoundingClientRect(),
-      height = items.length * 38 + 12;
-    setPosition({
+      height = menu.current?.offsetHeight || items.length * 38 + 12;
+    return {
       left: Math.max(8, Math.min(window.innerWidth - 218, r.right - 210)),
       top: Math.max(
         8,
-        r.bottom + height > window.innerHeight ? r.top - height : r.bottom + 6,
+        r.bottom + height + 6 > window.innerHeight
+          ? r.top - height - 6
+          : r.bottom + 6,
       ),
-    });
+    };
+  }
+  // Follow the same record if a background search refresh moves its row.
+  useLayoutEffect(() => {
+    if (!position) return;
+    const next = measure();
+    if (
+      Math.abs(next.left - position.left) > 0.5 ||
+      Math.abs(next.top - position.top) > 0.5
+    )
+      setPosition(next);
+  });
+  function toggle() {
+    setPosition(position ? null : measure());
   }
   return (
     <>
@@ -323,17 +343,28 @@ export function SearchField({
     </label>
   );
 }
+export function AccessSelect(props) {
+  return (
+    <DropdownSelect
+      {...props}
+      portal
+      className={`access-select ${props.className || ""}`}
+      menuClassName="access-dropdown-menu"
+    />
+  );
+}
 export function StatusFilter({ value, onChange }) {
   return (
-    <select
-      aria-label="Filter by status"
+    <AccessSelect
+      ariaLabel="Filter by status"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">All statuses</option>
-      <option value="active">Active</option>
-      <option value="inactive">Inactive</option>
-    </select>
+      onChange={onChange}
+      options={[
+        { value: "", label: "All statuses" },
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+      ]}
+    />
   );
 }
 export function StatusBadge({ active }) {
@@ -467,10 +498,11 @@ export function SummaryCards({ items }) {
           icon: Icon,
           tone = "neutral",
           horizontal = false,
+          valueFirst = false,
         }) => (
           <article
             key={label}
-            className={`access-detail-stat access-detail-stat-${tone} ${horizontal ? "horizontal" : ""}`}
+            className={`access-detail-stat access-detail-stat-${tone} ${horizontal ? "horizontal" : ""} ${valueFirst ? "access-stat-value-first" : ""}`}
           >
             {horizontal && Icon && <Icon size={23} aria-hidden="true" />}
             <div>
@@ -561,4 +593,13 @@ export async function exportAccessCsv(path, filters, columns, filename) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function LevelBadge({ number }) {
+  const tone = ["violet", "blue", "sky", "green", "orange"][(number - 1) % 5];
+  return (
+    <span className={`access-level-badge access-accent-${tone}`}>
+      L{number}
+    </span>
+  );
 }

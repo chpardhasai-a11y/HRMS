@@ -1304,3 +1304,193 @@
     flex-basis: 100%;
   }
 }
+
+.access-catalog .access-detail-stats {
+  margin-bottom: 34px;
+}
+.access-detail-stat.access-stat-value-first {
+  min-height: 112px;
+}
+.access-stat-value-first > div {
+  display: flex;
+  flex-direction: column;
+}
+.access-stat-value-first strong,
+.access-stat-value-first .access-skeleton-number {
+  order: -1;
+  margin: 0 0 4px;
+  color: #111c2c;
+}
+.access-stat-value-first.horizontal span:not(.access-skeleton) {
+  text-transform: none;
+  font-size: var(--font-body);
+  font-weight: 400;
+}
+.access-stat-value-first.access-detail-stat-blue > svg {
+  color: #2453df;
+}
+.access-stat-value-first.access-detail-stat-orange > svg {
+  color: #f97316;
+}
+.access-catalog .access-detail-filters {
+  margin-bottom: 28px;
+  justify-content: flex-start;
+}
+.access-catalog .access-detail-filters > .access-search {
+  width: 360px;
+}
+.access-catalog .access-detail-filters > select {
+  margin-left: auto;
+}
+.access-catalog .access-catalog-table {
+  margin-top: 0;
+}
+.access-catalog-table > h2 {
+  margin: 0;
+  padding: 24px 26px 20px;
+  font-size: var(--font-h3);
+  font-weight: 600;
+  color: #111c2c;
+}
+.access-catalog-table .access-table {
+  min-width: 760px;
+}
+.access-catalog-table .access-table th {
+  background: #fff;
+}
+.access-catalog-table .access-table td:first-child {
+  min-width: 135px;
+}
+.access-catalog-table .access-table td p {
+  font-size: var(--font-small);
+}
+.access-catalog-table .access-table td:nth-child(2) {
+  max-width: 380px;
+  min-width: 160px;
+}
+.access-catalog-table .access-table td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.access-catalog-table .access-table td strong {
+  font-weight: 500;
+}
+.access-catalog-table .access-status {
+  border: 1px solid #a7efce;
+  border-radius: 7px;
+  background: white;
+  padding: 2px 9px;
+}
+.access-catalog-table .access-status.badge-neutral {
+  border-color: #dce4ed;
+}
+.access-catalog-table .access-status::before {
+  display: none;
+}
+.access-catalog-table .access-more-button {
+  border: 0;
+  background: transparent;
+}
+.access-level-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: var(--font-small);
+  line-height: 1.8;
+  color: var(--accent);
+  background: var(--icon-bg);
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .access-catalog .access-detail-filters > .access-search {
+    width: 100%;
+  }
+  .access-catalog .access-detail-filters > select {
+    margin-left: 0;
+    max-width: none;
+  }
+  .access-catalog-table > h2 {
+    padding: 20px 18px 16px;
+  }
+  .access-detail-stat.access-stat-value-first {
+    min-height: 92px;
+  }
+}
+@media (max-width: 980px) {
+  .app-shell-with-nav:has(> .access-page) {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .app-shell-with-nav > .access-page {
+    min-height: 0;
+  }
+}
+
+/* Reuse the HRMS dropdown component for all Access Control selectors. */
+.access-select .dropdown-select-trigger {
+  min-height: 42px;
+  border: 1px solid #dce4ed;
+  border-radius: 8px;
+  font-weight: 400;
+  padding: 9px 12px;
+}
+.access-toolbar > .access-select {
+  width: 180px;
+  min-width: 0;
+}
+.access-detail-filters > .access-select {
+  width: 180px;
+  max-width: 240px;
+  flex-shrink: 0;
+}
+.access-detail-filters
+  > .access-select:has([aria-label="Filter users by role"]) {
+  width: 240px;
+}
+.access-catalog .access-detail-filters > .access-select {
+  margin-left: auto;
+}
+.access-field > .access-select {
+  width: 100%;
+}
+.access-dropdown-menu {
+  font-family: var(--font-sans);
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+.access-dropdown-menu .dropdown-select-option {
+  min-height: 36px;
+  font-weight: 400;
+}
+.dropdown-select-group {
+  padding: 9px 10px 4px;
+  color: var(--color-neutral-500);
+  font-size: var(--font-small);
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .access-toolbar > .access-select,
+  .access-detail-filters > .access-select {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    flex: 1;
+  }
+  .access-detail-filters
+    > .access-select:has([aria-label="Filter users by role"]) {
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .access-catalog .access-detail-filters > .access-select {
+    margin-left: 0;
+  }
+}
+
+.access-dropdown-menu .dropdown-select-option {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.access-dropdown-menu .dropdown-select-option > span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

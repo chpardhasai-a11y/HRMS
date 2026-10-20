@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw, Pencil } from "lucide-react";
 import {
   AccessPage,
+  LevelBadge,
   RowMenu,
   Alert,
   Dialog,
@@ -48,31 +49,42 @@ export default function LevelsPage() {
   }
   return (
     <AccessPage
-      title="Levels Management"
-      description="Define the hierarchy for role assignments. L1 is the highest authority."
+      detail
+      catalog
+      title="Levels"
+      description="Maintain ordered hierarchy ranks used by organization roles."
       actions={
-        <button
-          className="btn btn-primary"
-          onClick={() =>
-            setEditing({
-              number: "",
-              displayName: "",
-              description: "",
-              isActive: true,
-            })
-          }
-        >
-          <Plus size={16} /> Add Level
-        </button>
+        <>
+          <button
+            className="btn btn-secondary"
+            disabled={list.loading}
+            onClick={list.reload}
+          >
+            <RefreshCw
+              size={16}
+              className={list.loading ? "access-spin" : ""}
+            />
+            Refresh
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() =>
+              setEditing({
+                number: "",
+                displayName: "",
+                description: "",
+                isActive: true,
+              })
+            }
+          >
+            <Plus size={16} /> New Level
+          </button>
+        </>
       }
     >
-      <div className="access-note">
-        Levels define hierarchy only. They do not grant or inherit permissions.
-        Assign levels to roles in Roles Management.
-      </div>
       <Alert>{error || list.error}</Alert>
       <Alert success>{notice}</Alert>
-      <div className="access-toolbar">
+      <div className="access-detail-filters">
         <SearchField
           label="Search levels"
           value={search}
@@ -94,62 +106,93 @@ export default function LevelsPage() {
           </button>
         )}
       </div>
-      <div className="access-table-wrap">
-        <table className="access-table access-records">
-          <thead>
-            <tr>
-              <th>Level</th>
-              <th>Display name</th>
-              <th>Description</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <TableState
-              loading={list.loading}
-              error={list.error}
-              empty={!list.data.items.length}
-              columns={5}
-            />
-            {!list.loading &&
-              !list.error &&
-              list.data.items.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    <strong>{l.code}</strong>
-                  </td>
-                  <td>{l.displayName || "—"}</td>
-                  <td>{l.description || "—"}</td>
-                  <td>
-                    <StatusBadge active={l.isActive} />
-                  </td>
-                  <td>
-                    <div className="access-actions">
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => setEditing(l)}
-                      >
-                        Edit {l.code}
-                      </button>
-                      <RowMenu
-                        label={`Actions for ${l.code}`}
-                        items={[
-                          {
-                            label: l.isActive ? "Deactivate" : "Activate",
-                            disabled: busy,
-                            onClick: () => changeStatus(l),
-                          },
-                        ]}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-      <Pager page={page} total={list.data.total} onChange={setPage} />
+      <section
+        className="access-detail-table access-catalog-table"
+        aria-labelledby="level-catalog-title"
+      >
+        <h2 id="level-catalog-title">Hierarchy Levels</h2>
+        <div className="access-table-wrap">
+          <table
+            aria-busy={list.loading}
+            className="access-table access-records"
+          >
+            <thead>
+              <tr>
+                <th>Level</th>
+                <th>Description</th>
+                <th>Roles</th>
+                <th title="Distinct active users assigned an active role at this level">
+                  Active Users
+                </th>
+                <th title="Teams of users assigned to roles at this level">
+                  Teams
+                </th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <TableState
+                loading={list.loading && !list.data.items.length}
+                error={list.error}
+                empty={!list.data.items.length}
+                columns={7}
+              />
+              {!list.error &&
+                list.data.items.map((l) => (
+                  <tr key={l.id}>
+                    <td>
+                      <LevelBadge number={l.number} />
+                      {l.displayName && <p>{l.displayName}</p>}
+                    </td>
+                    <td>{l.description || "—"}</td>
+                    <td>{l.roleCount ?? "—"}</td>
+                    <td>{l.activeUserCount ?? "—"}</td>
+                    <td>
+                      {l.teams?.length
+                        ? l.teams
+                            .map(
+                              (t) => t.name + (t.isActive ? "" : " (Inactive)"),
+                            )
+                            .join(", ")
+                        : "—"}
+                    </td>
+                    <td>
+                      <StatusBadge active={l.isActive} />
+                    </td>
+                    <td>
+                      <div className="access-actions">
+                        <button
+                          className="access-icon-action"
+                          aria-label={`Edit ${l.code}`}
+                          title={`Edit ${l.code}`}
+                          onClick={() => setEditing(l)}
+                        >
+                          <Pencil size={17} />
+                        </button>
+                        <RowMenu
+                          label={`Actions for ${l.code}`}
+                          items={[
+                            {
+                              label: l.isActive ? "Deactivate" : "Activate",
+                              disabled: busy,
+                              onClick: () => changeStatus(l),
+                            },
+                          ]}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+        <Pager page={page} total={list.data.total} onChange={setPage} />
+      </section>
+      <p className="access-readonly-caption">
+        L1 is the highest authority. Levels define hierarchy only and do not
+        grant or inherit permissions.
+      </p>
       {editing && (
         <LevelForm
           level={editing}

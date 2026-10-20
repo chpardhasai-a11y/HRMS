@@ -3,6 +3,7 @@ import { useState } from "react";
 import { KeyRound, LockKeyhole } from "lucide-react";
 import {
   AccessPage,
+  AccessSelect,
   Alert,
   Pager,
   SearchField,
@@ -67,32 +68,36 @@ export default function PermissionsPage() {
             setPage(1);
           }}
         />
-        <select
-          aria-label="Filter by module"
+        <AccessSelect
+          ariaLabel="Filter by module"
           value={module}
-          onChange={(e) => {
-            setModule(e.target.value);
+          onChange={(value) => {
+            setModule(value);
             setPage(1);
           }}
-        >
-          <option value="">All modules</option>
-          {list.data.modules?.map((m) => (
-            <option key={m}>{m}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter by action"
+          options={[
+            { value: "", label: "All modules" },
+            ...(list.data.modules || []).map((value) => ({
+              value,
+              label: value,
+            })),
+          ]}
+        />
+        <AccessSelect
+          ariaLabel="Filter by action"
           value={action}
-          onChange={(e) => {
-            setAction(e.target.value);
+          onChange={(value) => {
+            setAction(value);
             setPage(1);
           }}
-        >
-          <option value="">All actions</option>
-          {list.data.actions?.map((a) => (
-            <option key={a}>{a}</option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: "All actions" },
+            ...(list.data.actions || []).map((value) => ({
+              value,
+              label: value,
+            })),
+          ]}
+        />
         <span className="access-result-count" aria-live="polite">
           {list.loading
             ? "Loading permissions…"
