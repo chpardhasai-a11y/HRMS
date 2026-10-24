@@ -109,11 +109,11 @@ body {
 }
 
 .app-shell-with-nav:has(.admin-only-sidenav) {
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .app-shell-with-nav:has(.app-sidenav-collapsed) {
-  grid-template-columns: 60px minmax(0, 1fr);
+  grid-template-columns: 48px minmax(0, 1fr);
 }
 
 .app-sidenav {
@@ -385,6 +385,56 @@ body {
   min-height: 40px;
   margin: 0 auto;
   padding: 0;
+}
+
+@media (min-width: 981px) {
+  .app-sidenav-collapsed {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-1);
+  }
+
+  .app-sidenav-collapsed .sidenav-top {
+    gap: var(--space-2);
+  }
+
+  .app-sidenav-collapsed .sidenav-accordion {
+    min-width: 0;
+    gap: var(--space-1);
+    padding-right: 0;
+  }
+
+  .app-sidenav-collapsed .sidenav-accordion details > div {
+    gap: 0;
+    padding: 0;
+  }
+
+  .app-sidenav-collapsed .sidenav-accordion summary,
+  .app-sidenav-collapsed .sidenav-accordion a,
+  .app-sidenav-collapsed .sidenav-logout {
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .app-sidenav-collapsed .sidenav-accordion summary > span {
+    justify-content: center;
+    gap: 0;
+  }
+
+  .app-sidenav-collapsed .sidenav-accordion summary > span > span,
+  .app-sidenav-collapsed .sidenav-logout span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 980px) {

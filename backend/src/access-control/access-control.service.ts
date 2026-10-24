@@ -7,6 +7,10 @@ import {
   UpdateLevelDto,
 } from "./access-control.dto";
 import { PERMISSIONS } from "./permissions.catalog";
+import {
+  BUSINESS_PERMISSION_GROUPS,
+  CATALOG_PERMISSION_GROUPS,
+} from "./business-permissions";
 import { roleRelationships } from "./catalog-relations";
 
 @Injectable()
@@ -32,6 +36,8 @@ export class AccessControlService {
       modules: [...new Set(PERMISSIONS.map((p) => p.module))].sort(),
       actions: [...new Set(PERMISSIONS.map((p) => p.action))].sort(),
       catalogTotal: PERMISSIONS.length,
+      businessGroups: BUSINESS_PERMISSION_GROUPS,
+      catalogGroups: CATALOG_PERMISSION_GROUPS,
     };
   }
   async levels(user: RequestUser, q: ListAccessDto) {

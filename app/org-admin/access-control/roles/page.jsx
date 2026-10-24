@@ -27,6 +27,15 @@ import {
   RowMenu,
   useDebounced,
 } from "../components";
+import PermissionMatrix from "../PermissionMatrix";
+import {
+  countBusinessActions,
+  permissionGroups,
+  rolePermissionCount,
+  filterBusinessGroups,
+  toggleAction,
+} from "../business-permissions";
+
 export default function RolesPage() {
   const [search, setSearch] = useState(""),
     [status, setStatus] = useState(""),
@@ -122,7 +131,9 @@ export default function RolesPage() {
           },
           {
             label: "Assigned Permissions",
-            value: list.data.summary?.assignedPermissions,
+            value: list.loading
+              ? undefined
+              : (list.data.summary?.assignedBusinessActions ?? null),
             icon: Shield,
             horizontal: true,
             valueFirst: true,
@@ -205,7 +216,7 @@ export default function RolesPage() {
                       )}
                       {!r.level.isActive && <small>Level inactive</small>}
                     </td>
-                    <td>{r.permissionKeys.length}</td>
+                    <td>{rolePermissionCount(r)} permissions</td>
                     <td>
                       <StatusBadge active={r.isActive} />
                     </td>
@@ -288,22 +299,13 @@ function RoleForm({ initial, onClose, onSaved }) {
     };
   }, [initial]);
   const change = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-  const available = options?.permissions.filter((p) => p.assignable) || [],
-    visible = available.filter(
-      (p) =>
-        (!module || p.module === module) &&
-        (!search ||
-          `${p.key} ${p.name} ${p.description}`
-            .toLowerCase()
-            .includes(search.toLowerCase())),
-    );
-  const toggle = (keys, checked) =>
-    change(
-      "permissionKeys",
-      checked
-        ? [...new Set([...form.permissionKeys, ...keys])]
-        : form.permissionKeys.filter((k) => !keys.includes(k)),
-    );
+  const groups = permissionGroups(options);
+  const visible = filterBusinessGroups(groups, search, module);
+  const toggle = (action, checked) =>
+    setForm((current) => ({
+      ...current,
+      permissionKeys: toggleAction(current.permissionKeys, action, checked),
+    }));
   async function save(e) {
     e.preventDefault();
     if (!form.levelId) {
@@ -334,6 +336,7 @@ function RoleForm({ initial, onClose, onSaved }) {
   }
   return (
     <Dialog
+      wide
       title={initial.id ? "Edit Role" : "Add Role"}
       onClose={() => {
         if (!busy) onClose();
@@ -399,10 +402,13 @@ function RoleForm({ initial, onClose, onSaved }) {
             <div className="access-actions">
               <h3>Permissions</h3>
               <span className="access-muted">
-                {form.permissionKeys.length} selected
+                {countBusinessActions(groups, form.permissionKeys)} permissions
+                selected
               </span>
             </div>
             <p className="access-muted">
+              Choose Create, Read, Update, Delete and any special permissions
+              for each module. Partial access preserves existing selections.
               Employee self-service and workflow eligibility rules continue to
               apply. Platform and Access Control administration are controlled
               by account type.
@@ -419,49 +425,19 @@ function RoleForm({ initial, onClose, onSaved }) {
                 onChange={setModule}
                 options={[
                   { value: "", label: "All modules" },
-                  ...[...new Set(available.map((p) => p.module))]
-                    .sort()
-                    .map((value) => ({ value, label: value })),
+                  ...groups.map((group) => ({
+                    value: group.id,
+                    label: group.label,
+                  })),
                 ]}
               />
             </div>
-            <label className="access-check">
-              <input
-                type="checkbox"
-                disabled={!visible.length}
-                checked={
-                  !!visible.length &&
-                  visible.every((p) => form.permissionKeys.includes(p.key))
-                }
-                onChange={(e) =>
-                  toggle(
-                    visible.map((p) => p.key),
-                    e.target.checked,
-                  )
-                }
-              />{" "}
-              Select all matching permissions ({visible.length})
-            </label>
-            <div className="access-permission-options">
-              {visible.length ? (
-                visible.map((p) => (
-                  <label className="access-permission-option" key={p.key}>
-                    <input
-                      type="checkbox"
-                      checked={form.permissionKeys.includes(p.key)}
-                      onChange={(e) => toggle([p.key], e.target.checked)}
-                    />
-                    <span>
-                      <strong>{p.name}</strong>
-                      <small>{p.key}</small>
-                      <small>{p.description}</small>
-                    </span>
-                  </label>
-                ))
-              ) : (
-                <p>No matching permissions.</p>
-              )}
-            </div>
+            <PermissionMatrix
+              groups={visible}
+              keys={form.permissionKeys}
+              onToggle={toggle}
+              permissions={options.permissions}
+            />
           </section>
           <div className="access-dialog-footer">
             <button

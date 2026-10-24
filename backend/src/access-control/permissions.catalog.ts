@@ -2080,6 +2080,18 @@ export const PERMISSIONS: readonly PermissionEntry[] = [
       "Active company account required. Workflow policies, participant visibility, task eligibility and field access apply per operation. An application role alone does not grant every workflow action.",
     scope: "Organization",
     roles: [],
+    endpoint: "POST /workflows/:id/archive",
+    status: "Available",
+  },
+  {
+    key: "workflows.remove",
+    name: "Delete · Workflows",
+    module: "Workflows",
+    action: "Delete",
+    description:
+      "Active company account required. Workflow policies, participant visibility, task eligibility and field access apply per operation. An application role alone does not grant every workflow action.",
+    scope: "Organization",
+    roles: [],
     endpoint: "DELETE /workflows/:id",
     status: "Available",
   },

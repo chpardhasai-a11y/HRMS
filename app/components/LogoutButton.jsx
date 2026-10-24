@@ -5,6 +5,8 @@ import { logoutUser } from '../lib/hrmsApi';
 
 export default function LogoutButton({ audience = 'employee', collapsed = false }) {
   function handleLogout() {
+    if (!window.confirm('Are you sure you want to log out?')) return;
+
     logoutUser();
     if (audience === 'platform') {
       window.location.href = '/platform-admin/login';

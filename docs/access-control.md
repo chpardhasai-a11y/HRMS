@@ -122,3 +122,47 @@ can rotate credentials only for active, unconfigured employee accounts. Configur
 or administrator accounts use User Management/password recovery. Employee account
 setup no longer accepts a fixed fallback verification code. Accounts without an
 employee link show an explicit empty state in self-service instead of a demo profile.
+
+## CRUD permissions
+
+Roles and Permissions use the same module definitions: Create, Read, Update,
+Delete, plus Approve/Reject for HR Approvals and Publish/Start/Act on task for
+Workflows. All workflow operations appear under one Workflows module. Employee
+history and onboarding views are included in Read; transfer, status changes and
+invitations are included in Update. Master-data activation is included in Update.
+Every module and permission has a description of its purpose and allowed actions.
+The Permissions page shows Permission Name, Code, Section, Module, Action and Description (without Resource), with section/module/action
+filters and search across descriptions. It has no separate technical catalog.
+
+`GET /access-control/roles/options` and `GET /access-control/permissions` retain
+`businessGroups` for API compatibility: groups have `id`, `label`, `description`
+and `actions`; actions have `id`, `label`, `description`, `kind`
+(`create|read|edit|delete|special`) and `permissionKeys`. The internal `edit` kind
+is displayed as Update. Existing endpoint catalog fields remain unchanged for
+older API clients. Role lists retain `businessActionCount` per role and
+`summary.assignedBusinessActions`, which the UI labels Permissions.
+
+Stored grants remain individual API permission keys. Partial access means an
+existing role holds only some keys in a CRUD permission. Opening or saving an
+unrelated edit preserves the exact original grants. Selecting a partial permission
+grants its entire bundle; clearing it removes that bundle. Filters never change
+hidden selections. No migration or automatic permission expansion is performed.
+Coverage tests reject missing, duplicate or restricted API mappings. Ownership,
+workflow policies, task eligibility and approval checks remain enforced.
+
+The frontend also supports API responses from before `businessGroups` and grouped
+role counts were added. CRUD definitions are shared in `permission-groups.json`;
+when groups are absent, the UI maps only keys explicitly marked assignable by
+`/roles/options`. It never offers unsupported keys or expands saved grants.
+Overview counts are calculated from those groups and existing role keys. Missing
+organization-wide grouped summary counts display as unavailable until the API is
+updated, rather than using raw endpoint counts or displaying NaN.
+
+
+The Permissions catalog includes the Access Control section: Users, Roles, Levels,
+Teams and Permissions. These CRUD entries (plus Reset password) document existing
+administrator-only operations and cannot be assigned to custom roles. API responses
+expose the combined display catalog as `catalogGroups`; `businessGroups` remains the
+assignable role catalog. Older responses use shared definitions filtered to known
+API operations. Overview totals include the display catalog. Descriptions wrap in
+their table cells and remain fully visible without expanding or horizontal text overflow.

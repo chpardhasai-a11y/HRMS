@@ -20,6 +20,12 @@ import { delegablePermission, grantableKeys } from "./permission-context";
 import { PERMISSIONS } from "./permissions.catalog";
 import { roleRelationships } from "./catalog-relations";
 
+import {
+  BUSINESS_PERMISSION_GROUPS,
+  CATALOG_PERMISSION_GROUPS,
+  businessActionCount,
+} from "./business-permissions";
+
 const userSelect = {
   id: true,
   companyId: true,
@@ -100,12 +106,17 @@ export class RoleUserService {
         items: items.map((r) => ({
           ...r,
           memberTeams: relationships.get(r.id)?.teams || [],
+          businessActionCount: businessActionCount(r.permissionKeys),
         })),
         total,
         page: q.page,
         pageSize: q.pageSize,
         summary: {
           totalRoles: catalog.length,
+          assignedBusinessActions: catalog.reduce(
+            (n, r) => n + businessActionCount(r.permissionKeys),
+            0,
+          ),
           activeRoles: catalog.filter((r) => r.isActive).length,
           assignedPermissions: catalog.reduce(
             (n, r) => n + r.permissionKeys.length,
@@ -129,6 +140,8 @@ export class RoleUserService {
         where: { companyId: u.companyId },
         orderBy: { number: "asc" },
       }),
+      businessGroups: BUSINESS_PERMISSION_GROUPS,
+      catalogGroups: CATALOG_PERMISSION_GROUPS,
       permissions: PERMISSIONS.map((p) => ({
         ...p,
         assignable: delegablePermission(p),

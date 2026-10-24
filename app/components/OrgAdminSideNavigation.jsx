@@ -26,7 +26,6 @@ import {
   PanelLeftOpen,
   Settings2,
   ShieldCheck,
-  Upload,
   UserCheck,
   UserRound,
   UsersRound,
@@ -59,12 +58,12 @@ const orgAdminGroups = [
         href: "/org-admin#lifecycle",
         icon: GitBranch,
       },
-      { label: "Bulk Upload & Import", href: "/org-admin#bulk", icon: Upload },
     ],
   },
   {
     label: "Workflows",
     icon: GitBranch,
+    directHref: "/org-admin/workflows",
     items: [
       { label: "Workflows", href: "/org-admin/workflows", icon: GitBranch },
       {
@@ -87,36 +86,12 @@ const orgAdminGroups = [
   {
     label: "Access Control",
     icon: ShieldCheck,
+    directHref: "/org-admin/access-control",
     items: [
       {
         label: "Overview",
         href: "/org-admin/access-control",
         icon: ShieldCheck,
-      },
-      {
-        label: "User Management",
-        href: "/org-admin/access-control/users",
-        icon: UserRound,
-      },
-      {
-        label: "Roles Management",
-        href: "/org-admin/access-control/roles",
-        icon: ShieldCheck,
-      },
-      {
-        label: "Levels Management",
-        href: "/org-admin/access-control/levels",
-        icon: Network,
-      },
-      {
-        label: "Teams Management",
-        href: "/org-admin/access-control/teams",
-        icon: UsersRound,
-      },
-      {
-        label: "Permissions Management",
-        href: "/org-admin/access-control/permissions",
-        icon: FileCheck2,
       },
     ],
   },
@@ -337,7 +312,7 @@ export default function OrgAdminSideNavigation({ activePath = "/org-admin" }) {
         className="sidenav-accordion"
         aria-label="Organization admin navigation"
       >
-        {groups.map(({ label, icon: Icon, items }, index) => {
+        {groups.map(({ label, icon: Icon, items, directHref }, index) => {
           const isOpen = items.some(
             (item) =>
               activePath === item.href ||
@@ -345,6 +320,25 @@ export default function OrgAdminSideNavigation({ activePath = "/org-admin" }) {
                 item.href !== "/org-admin" &&
                 activePath.startsWith(item.href)),
           );
+          if (directHref) {
+            const href = items.some((item) => item.href === directHref)
+              ? directHref
+              : items[0].href;
+            const active =
+              activePath === directHref ||
+              activePath.startsWith(`${directHref}/`);
+            return (
+              <a
+                className={active ? "active" : ""}
+                href={href}
+                key={label}
+                title={isCollapsed ? label : undefined}
+              >
+                <Icon size={17} />
+                <span>{label}</span>
+              </a>
+            );
+          }
           return (
             <details key={label} open={index === 0 || isOpen}>
               <summary title={isCollapsed ? label : undefined}>

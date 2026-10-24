@@ -417,7 +417,7 @@ export function TableState({ loading, error, empty, columns }) {
     </tr>
   ) : null;
 }
-export function Dialog({ title, onClose, children }) {
+export function Dialog({ title, onClose, children, wide = false }) {
   const titleId = useId(),
     ref = useRef(null),
     close = useRef(onClose);
@@ -463,7 +463,7 @@ export function Dialog({ title, onClose, children }) {
   return (
     <div className="access-backdrop">
       <section
-        className="access-dialog"
+        className={`access-dialog${wide ? " access-dialog-wide" : ""}`}
         ref={ref}
         role="dialog"
         aria-modal="true"
@@ -510,7 +510,11 @@ export function SummaryCards({ items }) {
               {value === undefined ? (
                 <span className="access-skeleton access-skeleton-number" />
               ) : (
-                <strong>{new Intl.NumberFormat("en-IN").format(value)}</strong>
+                <strong>
+                  {value === null
+                    ? "—"
+                    : new Intl.NumberFormat("en-IN").format(value)}
+                </strong>
               )}
             </div>
             {!horizontal && Icon && <Icon size={18} aria-hidden="true" />}

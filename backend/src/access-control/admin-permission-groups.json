@@ -1,0 +1,175 @@
+[
+  {
+    "id": "access-control.users",
+    "label": "Users",
+    "section": "Access Control",
+    "description": "Sign-in accounts, employee links, account status and role assignments within the organization.",
+    "assignable": false,
+    "actions": [
+      {
+        "id": "access-control.users.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Create organization sign-in accounts and assign their employee links and roles.",
+        "permissionKeys": ["access-control.createUser"]
+      },
+      {
+        "id": "access-control.users.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View user accounts, employee link options and account access details.",
+        "permissionKeys": [
+          "access-control.account",
+          "access-control.accountsList",
+          "access-control.employees",
+          "access-control.users"
+        ]
+      },
+      {
+        "id": "access-control.users.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Update account details, employee links and role assignments; activate or deactivate accounts.",
+        "permissionKeys": [
+          "access-control.updateUser",
+          "access-control.userStatus"
+        ]
+      },
+      {
+        "id": "access-control.users.password",
+        "kind": "special",
+        "label": "Reset password",
+        "description": "Set a new password for an organization account and revoke its existing sessions.",
+        "permissionKeys": ["access-control.password"]
+      }
+    ]
+  },
+  {
+    "id": "access-control.roles",
+    "label": "Roles",
+    "section": "Access Control",
+    "description": "Named permission bundles assigned to users and ranked by access levels.",
+    "assignable": false,
+    "actions": [
+      {
+        "id": "access-control.roles.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Create roles with an access level and explicit organization permissions.",
+        "permissionKeys": ["access-control.createRole"]
+      },
+      {
+        "id": "access-control.roles.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View role definitions, access levels and available role permissions.",
+        "permissionKeys": [
+          "access-control.role",
+          "access-control.roles",
+          "access-control.roleOptions"
+        ]
+      },
+      {
+        "id": "access-control.roles.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Update role names, access levels and permission selections; activate or deactivate roles.",
+        "permissionKeys": [
+          "access-control.updateRole",
+          "access-control.roleStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "access-control.levels",
+    "label": "Levels",
+    "section": "Access Control",
+    "description": "Hierarchy ranks such as L1 and L2 used to organize roles without inheriting permissions.",
+    "assignable": false,
+    "actions": [
+      {
+        "id": "access-control.levels.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Create a hierarchy level for organization roles.",
+        "permissionKeys": ["access-control.createLevel"]
+      },
+      {
+        "id": "access-control.levels.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View organization hierarchy levels and their status.",
+        "permissionKeys": ["access-control.levels"]
+      },
+      {
+        "id": "access-control.levels.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Update hierarchy level details and activate or deactivate a level.",
+        "permissionKeys": [
+          "access-control.updateLevel",
+          "access-control.levelStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "access-control.teams",
+    "label": "Teams",
+    "section": "Access Control",
+    "description": "Department teams and their memberships used for organization grouping and workflow assignments.",
+    "assignable": false,
+    "actions": [
+      {
+        "id": "access-control.teams.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Create teams within organization departments.",
+        "permissionKeys": ["access-control.createTeam"]
+      },
+      {
+        "id": "access-control.teams.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View teams and their members.",
+        "permissionKeys": ["access-control.teamsList", "access-control.members"]
+      },
+      {
+        "id": "access-control.teams.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Update team details and status; add or remove team members.",
+        "permissionKeys": [
+          "access-control.updateTeam",
+          "access-control.teamStatus",
+          "access-control.addMember",
+          "access-control.removeMember"
+        ]
+      },
+      {
+        "id": "access-control.teams.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete an unused team when membership and workflow references do not prevent deletion.",
+        "permissionKeys": ["access-control.deleteTeam"]
+      }
+    ]
+  },
+  {
+    "id": "access-control.permissions",
+    "label": "Permissions",
+    "section": "Access Control",
+    "description": "The application-managed catalog of module permissions and what each permission allows.",
+    "assignable": false,
+    "actions": [
+      {
+        "id": "access-control.permissions.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View, search and filter the permission catalog. Permission definitions are maintained by the application.",
+        "permissionKeys": ["access-control.permissions"]
+      }
+    ]
+  }
+]

@@ -12,10 +12,9 @@ import {
   Archive,
   Play,
   LayoutTemplate,
-  Clock,
-  CheckCircle2,
   Layers,
   FileText,
+  Trash2,
 } from "lucide-react";
 import { flow, actionKey, dateTime } from "./components/api";
 import { Badge, ErrorBox, Empty, Loading, Modal, Field } from "./components/ui";
@@ -33,7 +32,8 @@ export default function WorkflowsPage() {
     [start, setStart] = useState(null),
     [data, setData] = useState({}),
     [binding, setBinding] = useState(null),
-    [bound, setBound] = useState([]);
+    [bound, setBound] = useState([]),
+    [removeTarget, setRemoveTarget] = useState(null);
   async function load() {
     try {
       setError("");
@@ -89,44 +89,6 @@ export default function WorkflowsPage() {
             </button>
           </div>
         </header>
-        <section className="flow-stat-grid">
-          {[
-            {
-              label: "Total workflows",
-              value: rows.length,
-              icon: Layers,
-              color: "violet",
-            },
-            {
-              label: "Published",
-              value: rows.filter((r) => r.status === "PUBLISHED").length,
-              icon: CheckCircle2,
-              color: "green",
-            },
-            {
-              label: "Drafts",
-              value: rows.filter((r) => r.status === "DRAFT").length,
-              icon: Clock,
-              color: "amber",
-            },
-            {
-              label: "Executions",
-              value: rows.reduce((s, r) => s + r._count.instances, 0),
-              icon: GitBranch,
-              color: "blue",
-            },
-          ].map((s) => (
-            <div className="flow-stat" key={s.label}>
-              <div>
-                <span>{s.label}</span>
-                <strong>{s.value}</strong>
-              </div>
-              <i className={`flow-tint-${s.color}`}>
-                <s.icon size={20} />
-              </i>
-            </div>
-          ))}
-        </section>
         <ErrorBox error={error} />
         <div className="flow-section-toolbar">
           <div className="flow-tabs">
@@ -249,9 +211,20 @@ export default function WorkflowsPage() {
                       title="Archive"
                       aria-label={`Archive ${r.name}`}
                       disabled={busy || r.status === "ARCHIVED"}
-                      onClick={() => run(() => flow(`/${r.id}`, "DELETE"))}
+                      onClick={() =>
+                        run(() => flow(`/${r.id}/archive`, "POST", {}))
+                      }
                     >
                       <Archive size={16} />
+                    </button>
+                    <button
+                      className="flow-danger-action"
+                      title="Delete"
+                      aria-label={`Delete ${r.name}`}
+                      disabled={busy}
+                      onClick={() => setRemoveTarget(r)}
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </footer>
@@ -379,6 +352,40 @@ export default function WorkflowsPage() {
           >
             Bind published workflow
           </button>
+        </Modal>
+      )}
+      {removeTarget && (
+        <Modal
+          title={`Delete ${removeTarget.name}?`}
+          onClose={() => setRemoveTarget(null)}
+        >
+          <p>
+            This permanently removes the workflow and its unpublished draft.
+            Published workflows with executions must be archived instead.
+          </p>
+          <div className="flow-modal-actions">
+            <button
+              className="flow-button"
+              type="button"
+              onClick={() => setRemoveTarget(null)}
+              disabled={busy}
+            >
+              Cancel
+            </button>
+            <button
+              className="flow-button danger"
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  await flow(`/${removeTarget.id}`, "DELETE");
+                  setRemoveTarget(null);
+                })
+              }
+            >
+              <Trash2 size={16} /> Delete workflow
+            </button>
+          </div>
         </Modal>
       )}
     </>

@@ -467,11 +467,17 @@ export class WorkflowsController {
   ) {
     return this.service.update(id, b, u);
   }
-  @Delete(":id") archive(
+  @Post(":id/archive") archive(
     @Param("id") id: string,
     @CurrentUser() u: RequestUser,
   ) {
     return this.service.archive(id, u);
+  }
+  @Delete(":id") remove(
+    @Param("id") id: string,
+    @CurrentUser() u: RequestUser,
+  ) {
+    return this.service.remove(id, u);
   }
   @Post(":id/duplicate") duplicate(
     @Param("id") id: string,

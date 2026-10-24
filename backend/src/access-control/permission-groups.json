@@ -1,0 +1,724 @@
+[
+  {
+    "id": "employees",
+    "label": "Employees",
+    "description": "Employee records, onboarding and employment changes within the organization.",
+    "actions": [
+      {
+        "id": "employees.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add employee records and begin onboarding.",
+        "permissionKeys": ["employees.create"]
+      },
+      {
+        "id": "employees.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the employee list, individual profiles, onboarding queue and employee change history.",
+        "permissionKeys": [
+          "employees.findAll",
+          "employees.findOne",
+          "employees.audit",
+          "employees.getOnboardingQueue"
+        ]
+      },
+      {
+        "id": "employees.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Update employee details, documents, reporting managers and onboarding stages; transfer employees, change employment status and resend invitations. Existing approval rules still apply.",
+        "permissionKeys": [
+          "employees.update",
+          "employees.recordDocument",
+          "employees.updateManager",
+          "employees.updateOnboardingStage",
+          "employees.transfer",
+          "employees.updateStatus",
+          "employees.resendInvite"
+        ]
+      },
+      {
+        "id": "employees.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete employee records where the application permits deletion.",
+        "permissionKeys": ["employees.remove"]
+      }
+    ],
+    "section": "People Operations"
+  },
+  {
+    "id": "org-masters.legal-entities",
+    "label": "Legal Entities",
+    "description": "Registered entities that employ people in the organization.",
+    "actions": [
+      {
+        "id": "org-masters.legal-entities.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new legal entities to the organization's master data.",
+        "permissionKeys": ["org-masters.legal-entities.create"]
+      },
+      {
+        "id": "org-masters.legal-entities.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of legal entities.",
+        "permissionKeys": [
+          "org-masters.legal-entities.findAll",
+          "org-masters.legal-entities.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.legal-entities.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change legal entities details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.legal-entities.update",
+          "org-masters.legal-entities.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.legal-entities.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete legal entities records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.legal-entities.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.business-units",
+    "label": "Business Units",
+    "description": "Business divisions used to organize departments and employees.",
+    "actions": [
+      {
+        "id": "org-masters.business-units.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new business units to the organization's master data.",
+        "permissionKeys": ["org-masters.business-units.create"]
+      },
+      {
+        "id": "org-masters.business-units.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of business units.",
+        "permissionKeys": [
+          "org-masters.business-units.findAll",
+          "org-masters.business-units.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.business-units.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change business units details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.business-units.update",
+          "org-masters.business-units.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.business-units.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete business units records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.business-units.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.departments",
+    "label": "Departments",
+    "description": "Departments used to organize employees, teams and reporting structures.",
+    "actions": [
+      {
+        "id": "org-masters.departments.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new departments to the organization's master data.",
+        "permissionKeys": ["org-masters.departments.create"]
+      },
+      {
+        "id": "org-masters.departments.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of departments.",
+        "permissionKeys": [
+          "org-masters.departments.findAll",
+          "org-masters.departments.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.departments.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change departments details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.departments.update",
+          "org-masters.departments.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.departments.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete departments records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.departments.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.job-families",
+    "label": "Job Families",
+    "description": "Groups of related jobs used to classify employee roles.",
+    "actions": [
+      {
+        "id": "org-masters.job-families.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new job families to the organization's master data.",
+        "permissionKeys": ["org-masters.job-families.create"]
+      },
+      {
+        "id": "org-masters.job-families.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of job families.",
+        "permissionKeys": [
+          "org-masters.job-families.findAll",
+          "org-masters.job-families.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.job-families.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change job families details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.job-families.update",
+          "org-masters.job-families.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.job-families.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete job families records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.job-families.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.job-titles",
+    "label": "Job Titles",
+    "description": "Job titles assigned to employee positions.",
+    "actions": [
+      {
+        "id": "org-masters.job-titles.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new job titles to the organization's master data.",
+        "permissionKeys": ["org-masters.job-titles.create"]
+      },
+      {
+        "id": "org-masters.job-titles.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of job titles.",
+        "permissionKeys": [
+          "org-masters.job-titles.findAll",
+          "org-masters.job-titles.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.job-titles.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change job titles details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.job-titles.update",
+          "org-masters.job-titles.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.job-titles.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete job titles records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.job-titles.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.grade-bands",
+    "label": "Grade Bands",
+    "description": "Employee grades and bands used to classify position levels.",
+    "actions": [
+      {
+        "id": "org-masters.grade-bands.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new grade bands to the organization's master data.",
+        "permissionKeys": ["org-masters.grade-bands.create"]
+      },
+      {
+        "id": "org-masters.grade-bands.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of grade bands.",
+        "permissionKeys": [
+          "org-masters.grade-bands.findAll",
+          "org-masters.grade-bands.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.grade-bands.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change grade bands details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.grade-bands.update",
+          "org-masters.grade-bands.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.grade-bands.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete grade bands records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.grade-bands.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.pay-components",
+    "label": "Pay Components",
+    "description": "Pay component definitions used to structure employee compensation.",
+    "actions": [
+      {
+        "id": "org-masters.pay-components.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new pay components to the organization's master data.",
+        "permissionKeys": ["org-masters.pay-components.create"]
+      },
+      {
+        "id": "org-masters.pay-components.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of pay components.",
+        "permissionKeys": [
+          "org-masters.pay-components.findAll",
+          "org-masters.pay-components.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.pay-components.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change pay components details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.pay-components.update",
+          "org-masters.pay-components.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.pay-components.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete pay components records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.pay-components.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.employment-types",
+    "label": "Employment Types",
+    "description": "Employment classifications such as permanent or contract employment.",
+    "actions": [
+      {
+        "id": "org-masters.employment-types.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new employment types to the organization's master data.",
+        "permissionKeys": ["org-masters.employment-types.create"]
+      },
+      {
+        "id": "org-masters.employment-types.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of employment types.",
+        "permissionKeys": [
+          "org-masters.employment-types.findAll",
+          "org-masters.employment-types.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.employment-types.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change employment types details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.employment-types.update",
+          "org-masters.employment-types.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.employment-types.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete employment types records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.employment-types.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.work-modes",
+    "label": "Work Modes",
+    "description": "Working arrangements such as office, remote or hybrid work.",
+    "actions": [
+      {
+        "id": "org-masters.work-modes.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new work modes to the organization's master data.",
+        "permissionKeys": ["org-masters.work-modes.create"]
+      },
+      {
+        "id": "org-masters.work-modes.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of work modes.",
+        "permissionKeys": [
+          "org-masters.work-modes.findAll",
+          "org-masters.work-modes.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.work-modes.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change work modes details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.work-modes.update",
+          "org-masters.work-modes.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.work-modes.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete work modes records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.work-modes.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.work-shifts",
+    "label": "Work Shifts",
+    "description": "Work shift definitions used for employee schedules.",
+    "actions": [
+      {
+        "id": "org-masters.work-shifts.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new work shifts to the organization's master data.",
+        "permissionKeys": ["org-masters.work-shifts.create"]
+      },
+      {
+        "id": "org-masters.work-shifts.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of work shifts.",
+        "permissionKeys": [
+          "org-masters.work-shifts.findAll",
+          "org-masters.work-shifts.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.work-shifts.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change work shifts details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.work-shifts.update",
+          "org-masters.work-shifts.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.work-shifts.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete work shifts records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.work-shifts.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.holiday-calendars",
+    "label": "Holiday Calendars",
+    "description": "Holiday calendar records used by the organization.",
+    "actions": [
+      {
+        "id": "org-masters.holiday-calendars.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new holiday calendars to the organization's master data.",
+        "permissionKeys": ["org-masters.holiday-calendars.create"]
+      },
+      {
+        "id": "org-masters.holiday-calendars.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of holiday calendars.",
+        "permissionKeys": [
+          "org-masters.holiday-calendars.findAll",
+          "org-masters.holiday-calendars.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.holiday-calendars.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change holiday calendars details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.holiday-calendars.update",
+          "org-masters.holiday-calendars.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.holiday-calendars.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete holiday calendars records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.holiday-calendars.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.locations",
+    "label": "Locations",
+    "description": "Work locations assigned to employees and organizational records.",
+    "actions": [
+      {
+        "id": "org-masters.locations.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new locations to the organization's master data.",
+        "permissionKeys": ["org-masters.locations.create"]
+      },
+      {
+        "id": "org-masters.locations.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of locations.",
+        "permissionKeys": [
+          "org-masters.locations.findAll",
+          "org-masters.locations.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.locations.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change locations details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.locations.update",
+          "org-masters.locations.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.locations.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete locations records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.locations.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "org-masters.cost-centers",
+    "label": "Cost Centers",
+    "description": "Cost center records used to allocate employee and department costs.",
+    "actions": [
+      {
+        "id": "org-masters.cost-centers.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Add new cost centers to the organization's master data.",
+        "permissionKeys": ["org-masters.cost-centers.create"]
+      },
+      {
+        "id": "org-masters.cost-centers.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View the list and details of cost centers.",
+        "permissionKeys": [
+          "org-masters.cost-centers.findAll",
+          "org-masters.cost-centers.findOne"
+        ]
+      },
+      {
+        "id": "org-masters.cost-centers.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Change cost centers details and activate or deactivate records.",
+        "permissionKeys": [
+          "org-masters.cost-centers.update",
+          "org-masters.cost-centers.toggleStatus"
+        ]
+      },
+      {
+        "id": "org-masters.cost-centers.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete cost centers records when they are not protected by existing references.",
+        "permissionKeys": ["org-masters.cost-centers.delete"]
+      }
+    ],
+    "section": "Master Catalog"
+  },
+  {
+    "id": "approvals",
+    "label": "HR Approvals",
+    "description": "Employee change requests that require an authorized HR decision.",
+    "actions": [
+      {
+        "id": "approvals.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Submit an employee change request for approval.",
+        "permissionKeys": ["approvals.create"]
+      },
+      {
+        "id": "approvals.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View HR approval requests and their status.",
+        "permissionKeys": ["approvals.findAll"]
+      },
+      {
+        "id": "approvals.approve",
+        "kind": "special",
+        "label": "Approve",
+        "description": "Approve eligible employee change requests, subject to the existing approval rules.",
+        "permissionKeys": ["approvals.approve"]
+      },
+      {
+        "id": "approvals.reject",
+        "kind": "special",
+        "label": "Reject",
+        "description": "Reject eligible employee change requests, subject to the existing approval rules.",
+        "permissionKeys": ["approvals.reject"]
+      }
+    ],
+    "section": "People Operations"
+  },
+  {
+    "id": "workflows",
+    "label": "Workflows",
+    "description": "Workflow definitions, forms, requests, tasks, records and execution monitoring.",
+    "actions": [
+      {
+        "id": "workflows.create",
+        "kind": "create",
+        "label": "Create",
+        "description": "Create or duplicate workflow definitions, create workflow records and upload attachments.",
+        "permissionKeys": [
+          "workflows.create",
+          "workflows.duplicate",
+          "workflows.record",
+          "workflows.stagedUpload",
+          "workflows.upload"
+        ]
+      },
+      {
+        "id": "workflows.read",
+        "kind": "read",
+        "label": "Read",
+        "description": "View workflow definitions, forms, requests, tasks, notifications, records, monitoring, bindings and connections; download attachments and export reports. Workflow visibility and field restrictions still apply.",
+        "permissionKeys": [
+          "workflows.list",
+          "workflows.get",
+          "workflows.templates",
+          "workflows.formDefinition",
+          "workflows.lookups",
+          "workflows.instances",
+          "workflows.details",
+          "workflows.tasks",
+          "workflows.notifications",
+          "workflows.records",
+          "workflows.download",
+          "workflows.monitoring",
+          "workflows.csv",
+          "workflows.bindings",
+          "workflows.connections"
+        ]
+      },
+      {
+        "id": "workflows.edit",
+        "kind": "edit",
+        "label": "Update",
+        "description": "Update workflow designs, forms and records; configure bindings, connections and membership; test or validate workflows, mark notifications as read, archive definitions and control running instances. Existing workflow policies still apply.",
+        "permissionKeys": [
+          "workflows.update",
+          "workflows.form",
+          "workflows.updateRecord",
+          "workflows.readNotification",
+          "workflows.bind",
+          "workflows.connection",
+          "workflows.membership",
+          "workflows.test",
+          "workflows.validate",
+          "workflows.archive",
+          "workflows.control"
+        ]
+      },
+      {
+        "id": "workflows.delete",
+        "kind": "delete",
+        "label": "Delete",
+        "description": "Delete workflow definitions that have no executions or protected process bindings.",
+        "permissionKeys": ["workflows.remove"]
+      },
+      {
+        "id": "workflows.publish",
+        "kind": "special",
+        "label": "Publish",
+        "description": "Publish a workflow definition so it can be used, subject to its publisher policy.",
+        "permissionKeys": ["workflows.publish"]
+      },
+      {
+        "id": "workflows.start",
+        "kind": "special",
+        "label": "Start",
+        "description": "Start a workflow or HR workflow request, subject to its start policy.",
+        "permissionKeys": ["workflows.start", "workflows.startHR"]
+      },
+      {
+        "id": "workflows.action",
+        "kind": "special",
+        "label": "Act on task",
+        "description": "Submit an available task decision, such as approval or rejection, only when eligible for that task.",
+        "permissionKeys": ["workflows.action"]
+      }
+    ],
+    "section": "Workflows"
+  }
+]

@@ -226,6 +226,28 @@ export class WorkflowsService {
       data: { status: "ARCHIVED", revision: { increment: 1 } },
     });
   }
+  async remove(id: string, user: RequestUser) {
+    return this.db.$transaction(async (tx) => {
+      await lock(tx, `definition:${id}`);
+      const d = await this.definition(id, user, tx);
+      requirePolicy(d.draft as any, user, "publishers");
+      if (d._count.instances) {
+        throw new ConflictException(
+          "This workflow has executions and cannot be deleted. Archive it instead.",
+        );
+      }
+      const binding = await tx.flowBinding.findFirst({
+        where: { companyId: user.companyId, definitionId: id },
+        select: { id: true },
+      });
+      if (binding) {
+        throw new ConflictException(
+          "This workflow is bound to an application process. Remove the binding before deleting it.",
+        );
+      }
+      return tx.flowDefinition.delete({ where: { id } });
+    });
+  }
   async duplicate(id: string, user: RequestUser) {
     const d = await this.get(id, user);
     return this.create(

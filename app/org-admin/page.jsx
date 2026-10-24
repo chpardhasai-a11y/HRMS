@@ -15,7 +15,6 @@ import {
   KeyRound,
   Mail,
   MoreHorizontal,
-  Plus,
   Search,
   Send,
   ShieldAlert,
@@ -635,35 +634,6 @@ export default function AdminPage() {
               <SkeletonTable rows={6} columns={8} />
             ) : (
               <>
-                {/* Org Admin Workflow Engine Quick Access Banner */}
-                <div className="card" style={{ padding: '20px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#ffffff', borderRadius: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid #334155' }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '280px', flex: '1 1 auto' }}>
-                      <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'rgba(37, 99, 235, 0.25)', border: '1px solid rgba(59, 130, 246, 0.4)', display: 'grid', placeItems: 'center', color: '#60a5fa', flexShrink: 0 }}>
-                        <GitBranch size={24} />
-                      </div>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>Workflow Engine & Governance</h2>
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: '#2563eb', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>NEW MODULE</span>
-                        </div>
-                        <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>Create multi-stage approval flows, custom approver routing rules (Manager, Dept Head, Roles), and monitor execution instances live.</p>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <a href="/org-admin/workflows" className="btn btn-primary" style={{ background: '#2563eb', color: '#ffffff', border: 'none', fontWeight: 600 }}>
-                        <GitBranch size={16} /> Open Workflow Dashboard
-                      </a>
-                      <a href="/org-admin/workflows/builder" className="btn btn-secondary" style={{ background: 'rgba(255,255,255,0.1)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600 }}>
-                        <Plus size={16} /> Create Workflow
-                      </a>
-                      <a href="/org-admin/approvals" className="btn btn-secondary" style={{ background: 'rgba(255,255,255,0.1)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600 }}>
-                        <ShieldAlert size={16} /> Approvals
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
                 <section className="card employee-master-card" id="main-content">
                   <div className="panel-top">
                     <div>

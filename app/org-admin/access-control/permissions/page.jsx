@@ -1,187 +1,210 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyRound, LockKeyhole } from "lucide-react";
 import {
+  accessApi,
   AccessPage,
   AccessSelect,
   Alert,
-  Pager,
   SearchField,
   SummaryCards,
-  TableState,
-  useAccessList,
-  useDebounced,
 } from "../components";
+import {
+  filterBusinessGroups,
+  catalogPermissionGroups,
+} from "../business-permissions";
+
 const moduleTone = (name) =>
   ["blue", "sky", "violet", "green", "orange"][
     Array.from(name).reduce((n, c) => n + c.charCodeAt(0), 0) % 5
   ];
+
 export default function PermissionsPage() {
-  const [search, setSearch] = useState(""),
-    [module, setModule] = useState(""),
-    [action, setAction] = useState(""),
-    [page, setPage] = useState(1);
-  const list = useAccessList("/permissions", {
-    search: useDebounced(search),
-    module,
-    action,
-    page,
-  });
+  const [catalog, setCatalog] = useState(null);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [section, setSection] = useState("");
+  const [module, setModule] = useState("");
+  const [action, setAction] = useState("");
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setError("");
+    accessApi("/roles/options")
+      .then((data) => {
+        if (live) setCatalog(data);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [retry]);
+  const groups = catalogPermissionGroups(catalog);
+  const sectionGroups = groups.filter(
+    (group) => !section || group.section === section,
+  );
+  const visible = filterBusinessGroups(sectionGroups, search, module)
+    .map((group) => ({
+      ...group,
+      actions: group.actions.filter((p) => !action || p.label === action),
+    }))
+    .filter((group) => group.actions.length);
+  const total = groups.reduce((n, group) => n + group.actions.length, 0);
+  const shown = visible.reduce((n, group) => n + group.actions.length, 0);
   return (
     <AccessPage
       detail
       title="Permissions"
-      description="Browse grouped system permissions and their access restrictions."
+      description="Permissions available for each module: Create, Read, Update, Delete and specific approval or workflow actions."
     >
       <SummaryCards
         items={[
           {
-            label: "Total permissions",
-            value: list.data.catalogTotal,
+            label: "Permissions",
+            value: catalog ? total : undefined,
             icon: KeyRound,
             horizontal: true,
           },
           {
             label: "Modules",
-            value: list.data.modules?.length,
+            value: catalog ? groups.length : undefined,
             icon: KeyRound,
             horizontal: true,
             tone: "blue",
           },
-          {
-            label: "Actions",
-            value: list.data.actions?.length,
-            icon: KeyRound,
-            horizontal: true,
-            tone: "violet",
-          },
         ]}
       />
-      <Alert>{list.error}</Alert>
+      <Alert>{error}</Alert>
+      {error && (
+        <button
+          className="btn btn-secondary"
+          onClick={() => setRetry((n) => n + 1)}
+        >
+          Retry
+        </button>
+      )}
       <div className="access-detail-filters">
         <SearchField
           label="Search permissions"
-          placeholder="Search permissions…"
           value={search}
-          onChange={(v) => {
-            setSearch(v);
-            setPage(1);
+          onChange={setSearch}
+        />
+        <AccessSelect
+          ariaLabel="Filter by section"
+          value={section}
+          onChange={(value) => {
+            setSection(value);
+            setModule("");
           }}
+          options={[
+            { value: "", label: "All sections" },
+            ...[...new Set(groups.map((g) => g.section))].map((label) => ({
+              value: label,
+              label,
+            })),
+          ]}
         />
         <AccessSelect
           ariaLabel="Filter by module"
           value={module}
-          onChange={(value) => {
-            setModule(value);
-            setPage(1);
-          }}
+          onChange={setModule}
           options={[
             { value: "", label: "All modules" },
-            ...(list.data.modules || []).map((value) => ({
-              value,
-              label: value,
-            })),
+            ...sectionGroups.map((g) => ({ value: g.id, label: g.label })),
           ]}
         />
         <AccessSelect
           ariaLabel="Filter by action"
           value={action}
-          onChange={(value) => {
-            setAction(value);
-            setPage(1);
-          }}
+          onChange={setAction}
           options={[
             { value: "", label: "All actions" },
-            ...(list.data.actions || []).map((value) => ({
-              value,
-              label: value,
-            })),
+            ...[
+              ...new Set(groups.flatMap((g) => g.actions.map((p) => p.label))),
+            ].map((label) => ({ value: label, label })),
           ]}
         />
         <span className="access-result-count" aria-live="polite">
-          {list.loading
-            ? "Loading permissions…"
-            : `${list.data.total} of ${list.data.catalogTotal ?? "—"} permissions`}
+          {catalog
+            ? `${shown} of ${total} permissions`
+            : "Loading permissions…"}
         </span>
-        {list.error && (
-          <button className="btn btn-secondary" onClick={list.reload}>
-            Retry
-          </button>
-        )}
       </div>
       <div className="access-detail-table">
         <div className="access-table-wrap">
-          <table className="access-table access-permission-catalog">
+          <table
+            className="access-table access-permission-list"
+            aria-label="Permissions"
+          >
             <thead>
               <tr>
-                {[
-                  "Permission Name",
-                  "Code",
-                  "Module",
-                  "Scope",
-                  "Action",
-                  "Description",
-                ].map((h) => (
-                  <th key={h} scope="col">
-                    {h}
-                  </th>
-                ))}
+                <th scope="col">Permission Name</th>
+                <th scope="col">Code</th>
+                <th scope="col">Section</th>
+                <th scope="col">Module</th>
+                <th scope="col">Action</th>
+                <th scope="col">Description</th>
               </tr>
             </thead>
             <tbody>
-              <TableState
-                loading={list.loading}
-                error={list.error}
-                empty={!list.data.items.length}
-                columns={6}
-              />
-              {!list.loading &&
-                !list.error &&
-                list.data.items.map((p) => (
-                  <tr key={p.key}>
+              {!catalog && !error && (
+                <tr>
+                  <td colSpan={6}>Loading permissions…</td>
+                </tr>
+              )}
+              {catalog && !visible.length && (
+                <tr>
+                  <td colSpan={6}>No records found.</td>
+                </tr>
+              )}
+              {visible.map((group) =>
+                group.actions.map((permission) => (
+                  <tr key={permission.id}>
                     <td>
-                      <strong>{p.name}</strong>
-                      {p.status !== "Available" && <small>{p.status}</small>}
+                      <strong>{permission.id}</strong>
                     </td>
                     <td>
-                      <code className="access-code-chip">{p.key}</code>
+                      <code className="access-code-chip">{permission.id}</code>
                     </td>
+                    <td>{group.section}</td>
                     <td>
                       <span
-                        className={`access-module-tag access-accent-${moduleTone(p.module)}`}
+                        className={`access-module-tag access-accent-${moduleTone(group.label)}`}
                       >
-                        {p.module}
+                        {group.label}
                       </span>
                     </td>
                     <td>
-                      <span className="access-muted">{p.scope}</span>
+                      <span className="access-action-tag">
+                        {permission.label}
+                      </span>
                     </td>
                     <td>
-                      <span className="access-action-tag">{p.action}</span>
-                    </td>
-                    <td>
-                      <details className="access-permission-description">
-                        <summary title={p.description}>{p.description}</summary>
-                        <div>
-                          <p>{p.description}</p>
-                          {p.roles.length > 0 && (
-                            <p>Account types: {p.roles.join(", ")}</p>
-                          )}
-                          {p.endpoint && <code>{p.endpoint}</code>}
-                        </div>
-                      </details>
+                      <p className="access-permission-explanation">
+                        {permission.description}
+                      </p>
+                      <p className="access-permission-context">
+                        {group.description}
+                      </p>
+                      {group.assignable === false && (
+                        <small className="access-admin-only">
+                          Organization administrator only.
+                        </small>
+                      )}
                     </td>
                   </tr>
-                ))}
+                )),
+              )}
             </tbody>
           </table>
         </div>
-        <Pager page={page} total={list.data.total} onChange={setPage} />
       </div>
       <p className="access-readonly-caption">
-        <LockKeyhole size={14} />
-        Permissions are maintained by the application. This catalog is read-only
-        and does not grant access.
+        <LockKeyhole size={14} /> Assign organization permissions through Roles.
+        Access Control permissions are reserved for organization administrators.
+        Existing ownership and approval rules continue to apply.
       </p>
     </AccessPage>
   );

@@ -13,6 +13,11 @@ import {
 } from "lucide-react";
 import { AccessPage, Alert, accessApi } from "./components";
 
+import {
+  catalogPermissionGroups,
+  rolePermissionCount,
+} from "./business-permissions";
+
 const cards = [
   {
     slug: "users",
@@ -39,10 +44,9 @@ const cards = [
     title: "Permissions",
     icon: KeyRound,
     color: "violet",
-    description:
-      "Browse grouped system permissions and their access restrictions.",
+    description: "View module permissions and what each permission allows.",
     metric: "permissions",
-    unit: "system permissions",
+    unit: "permissions",
   },
   {
     slug: "levels",
@@ -85,7 +89,7 @@ export default function AccessControlOverview() {
         accessApi("/roles?status=active&pageSize=100"),
         accessApi("/teams?status=active&pageSize=1"),
         accessApi("/levels?status=active&pageSize=1"),
-        accessApi("/permissions?pageSize=1"),
+        accessApi("/roles/options"),
       ]);
       const remaining = await Promise.all(
         Array.from(
@@ -94,15 +98,16 @@ export default function AccessControlOverview() {
             accessApi(`/roles?status=active&pageSize=100&page=${i + 2}`),
         ),
       );
+      const groups = catalogPermissionGroups(permissions);
       setData({
         users: users.total,
         roles: roles.total,
         teams: teams.total,
         levels: levels.total,
-        permissions: permissions.total,
+        permissions: groups.reduce((n, g) => n + g.actions.length, 0),
         grants: [roles, ...remaining]
           .flatMap((p) => p.items)
-          .reduce((n, r) => n + r.permissionKeys.length, 0),
+          .reduce((n, r) => n + rolePermissionCount(r), 0),
       });
     } catch (e) {
       setError(e.message);

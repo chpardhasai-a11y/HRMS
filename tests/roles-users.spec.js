@@ -34,13 +34,9 @@ test("create, reopen and edit a level-linked role with real permissions", async 
   await page.getByRole("button", { name: "New Role", exact: true }).click();
   await page.getByLabel("Role name", { exact: true }).fill(roleName);
   await chooseDropdown(page, "Level", fixture.levelId);
+  await page.getByLabel("Search role permissions").fill("Departments");
   await page
-    .getByLabel("Search role permissions")
-    .fill("org-masters.departments.findAll");
-  await page
-    .locator(".access-permission-option")
-    .filter({ hasText: "org-masters.departments.findAll" })
-    .getByRole("checkbox")
+    .getByRole("checkbox", { name: "Departments: Read", exact: true })
     .check();
   await page.getByRole("button", { name: "Save Role", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -89,6 +85,8 @@ test("create and manage a user, assign a role, inspect access and reset password
   await page
     .getByRole("menuitem", { name: "View Access", exact: true })
     .click();
+  await expect(page.getByRole("dialog")).toContainText("Departments");
+  await page.getByRole("dialog").getByText("Details", { exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText(
     "org-masters.departments.findAll",
   );
@@ -140,6 +138,44 @@ test("delegated account navigates permitted pages and cannot open access adminis
   });
   expect(response.ok()).toBeTruthy();
   const s = await response.json();
+  expect(s.user.permissions).toContain("org-masters.departments.findAll");
+  expect(s.user.permissions).toContain("org-masters.departments.findOne");
+  const created = await request.post(`${api}/org-masters/departments`, {
+    headers: { Authorization: `Bearer ${session.accessToken}` },
+    data: { name: `Read bundle QA ${Date.now()}` },
+  });
+  expect(created.ok()).toBeTruthy();
+  const department = await created.json();
+  const memberHeaders = { Authorization: `Bearer ${s.accessToken}` };
+  expect(
+    (
+      await request.get(`${api}/org-masters/departments`, {
+        headers: memberHeaders,
+      })
+    ).ok(),
+  ).toBeTruthy();
+  expect(
+    (
+      await request.get(`${api}/org-masters/departments/${department.id}`, {
+        headers: memberHeaders,
+      })
+    ).ok(),
+  ).toBeTruthy();
+  expect(
+    (
+      await request.patch(`${api}/org-masters/departments/${department.id}`, {
+        headers: memberHeaders,
+        data: { name: "Forbidden edit" },
+      })
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.delete(`${api}/org-masters/departments/${department.id}`, {
+        headers: memberHeaders,
+      })
+    ).status(),
+  ).toBe(403);
   const context = await browser.newContext();
   await context.addInitScript((s) => {
     localStorage.setItem("hrms_token", s.accessToken);
@@ -279,5 +315,80 @@ test("user summary, role filters, recent sign-ins and CSV export use real data",
   );
   await expect(page.locator(".access-table tbody tr")).not.toContainText(
     memberEmail,
+  );
+});
+
+test("partial permissions survive unrelated edits and change only through explicit selection", async ({
+  page,
+  request,
+}) => {
+  const headers = { Authorization: `Bearer ${session.accessToken}` };
+  const original = [
+    "employees.findAll",
+    "employees.update",
+    "org-masters.departments.findOne",
+  ];
+  const created = await request.post(`${api}/access-control/roles`, {
+    headers,
+    data: {
+      name: `Partial role ${Date.now()}`,
+      levelId: fixture.levelId,
+      permissionKeys: original,
+      isActive: true,
+    },
+  });
+  expect(created.ok()).toBeTruthy();
+  const role = await created.json();
+  async function persistedKeys() {
+    const r = await request.get(`${api}/access-control/roles/${role.id}`, {
+      headers,
+    });
+    expect(r.ok()).toBeTruthy();
+    return (await r.json()).permissionKeys.sort();
+  }
+  async function reopen() {
+    await page.getByLabel("Search roles", { exact: true }).fill(role.name);
+    await page
+      .locator(".access-records tbody tr")
+      .filter({ hasText: role.name })
+      .getByRole("button", { name: "Edit Role", exact: true })
+      .click();
+    await expect(
+      page.getByRole("checkbox", { name: "Employees: Read", exact: true }),
+    ).toHaveAttribute("aria-checked", "mixed");
+  }
+  await page.goto("/org-admin/access-control/roles");
+  await reopen();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Partial access", { exact: true })).toHaveCount(
+    3,
+  );
+  await dialog
+    .getByLabel("Description", { exact: true })
+    .fill("Preserve original access");
+  await dialog.getByRole("button", { name: "Save Role", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await persistedKeys()).toEqual([...original].sort());
+  await reopen();
+  await page
+    .getByRole("checkbox", { name: "Employees: Read", exact: true })
+    .click();
+  await page
+    .getByRole("checkbox", { name: "Employees: Update", exact: true })
+    .click();
+  // Clearing a selected group removes all its mapped keys.
+  await page
+    .getByRole("checkbox", { name: "Employees: Update", exact: true })
+    .uncheck();
+  await page.getByRole("button", { name: "Save Role", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await persistedKeys()).toEqual(
+    [
+      "employees.findAll",
+      "employees.findOne",
+      "employees.audit",
+      "employees.getOnboardingQueue",
+      "org-masters.departments.findOne",
+    ].sort(),
   );
 });

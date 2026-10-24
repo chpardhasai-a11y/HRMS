@@ -63,6 +63,28 @@
 .flow-main > .admin-breadcrumbs {
   margin-bottom: 16px;
 }
+.flow-section-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  border-bottom: 1px solid var(--flow-border);
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+.flow-section-nav a {
+  flex-shrink: 0;
+  padding: 12px 0 14px;
+  color: var(--flow-muted);
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+.flow-section-nav a:hover,
+.flow-section-nav a[aria-current="page"] {
+  color: var(--flow-text);
+}
+.flow-section-nav a[aria-current="page"] {
+  border-bottom-color: var(--flow-text);
+}
 .flow-page {
   padding: 0;
   margin: 0;
@@ -406,6 +428,15 @@
 }
 .flow-card footer button:hover {
   color: var(--color-primary-hover);
+}
+.flow-card footer button.flow-danger-action:hover {
+  color: #b42318;
+}
+.flow-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
 }
 .flow-create-card {
   border: 1px dashed var(--color-border);

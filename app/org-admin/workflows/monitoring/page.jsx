@@ -10,7 +10,6 @@ import {
   Pause,
   X,
   RotateCcw,
-  Clock,
   CheckCircle2,
   AlertTriangle,
   GitBranch,
@@ -115,44 +114,6 @@ function Monitoring() {
         ) : (
           stats && (
             <>
-              <section className="flow-stat-grid">
-                {[
-                  {
-                    label: "Active executions",
-                    value: stats.running,
-                    icon: Activity,
-                    color: "violet",
-                  },
-                  {
-                    label: "Completed",
-                    value: stats.completed,
-                    icon: CheckCircle2,
-                    color: "green",
-                  },
-                  {
-                    label: "Overdue tasks",
-                    value: stats.overdue,
-                    icon: Clock,
-                    color: "amber",
-                  },
-                  {
-                    label: "Failed executions",
-                    value: stats.failed,
-                    icon: AlertTriangle,
-                    color: "rose",
-                  },
-                ].map((s) => (
-                  <div key={s.label} className="flow-stat">
-                    <div>
-                      <span>{s.label}</span>
-                      <strong>{s.value}</strong>
-                    </div>
-                    <i className={`flow-tint-${s.color}`}>
-                      <s.icon size={21} />
-                    </i>
-                  </div>
-                ))}
-              </section>
               <div className="flow-monitor-panels">
                 <section className="flow-panel">
                   <header>

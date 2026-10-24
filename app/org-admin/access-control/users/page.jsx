@@ -29,6 +29,12 @@ import {
   RowMenu,
   useDebounced,
 } from "../components";
+import PermissionMatrix from "../PermissionMatrix";
+import {
+  countBusinessActions,
+  permissionGroups,
+  rolePermissionCount,
+} from "../business-permissions";
 export default function UsersPage() {
   const [search, setSearch] = useState(""),
     [status, setStatus] = useState("active"),
@@ -646,7 +652,7 @@ function UserForm({ initial, self, onClose, onSaved }) {
                         {r.name} · L{r.level.number}
                       </strong>
                       <small>
-                        {r.permissionKeys.length} permissions
+                        {rolePermissionCount(r)} permissions
                         {!r.isActive ? " · Inactive" : ""}
                       </small>
                     </span>
@@ -770,9 +776,9 @@ function UserAccess({ user, onClose }) {
     ),
   ];
   return (
-    <Dialog title="User Access" onClose={onClose}>
+    <Dialog wide title="User Access" onClose={onClose}>
       <Alert>{error}</Alert>
-      {detail ? (
+      {detail && options ? (
         <>
           <h3>{detail.email}</h3>
           <StatusBadge active={detail.isActive} />
@@ -791,15 +797,23 @@ function UserAccess({ user, onClose }) {
               </span>
             ))}
           </div>
-          <h3>Active custom role permissions ({keys.length})</h3>
-          <ul className="access-access-list">
-            {keys.map((k) => (
-              <li key={k}>
-                {options?.permissions.find((p) => p.key === k)?.name || k}
-                <small>{k}</small>
-              </li>
-            ))}
-          </ul>
+          <h3>
+            Active custom role permissions (
+            {countBusinessActions(permissionGroups(options), keys)})
+          </h3>
+          <PermissionMatrix
+            showSelection
+            groups={permissionGroups(options)
+              .map((g) => ({
+                ...g,
+                actions: g.actions.filter((a) =>
+                  a.permissionKeys.some((k) => keys.includes(k)),
+                ),
+              }))
+              .filter((g) => g.actions.length)}
+            keys={keys}
+            permissions={options?.permissions || []}
+          />
           {!keys.length && (
             <p className="access-muted">No additional custom permissions.</p>
           )}

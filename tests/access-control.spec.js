@@ -29,26 +29,40 @@ test("permissions remain read-only and Access Control uses shared navigation", a
   ).toBeVisible();
   await expect(page.locator(".app-sidenav")).toHaveCount(1);
   await expect(
-    page.getByText("User Management", { exact: true }),
+    page
+      .getByRole("navigation", { name: "Organization admin navigation" })
+      .getByRole("link", { name: "Access Control", exact: true }),
   ).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Organization admin navigation" })
+      .getByRole("link", { name: "Overview", exact: true }),
+  ).toHaveCount(0);
   await expect(page.locator(".sidenav-coming-next")).toHaveCount(0);
   await expect(
     page
       .locator(".access-page")
       .getByRole("button", { name: /Add|Edit|Delete/ }),
   ).toHaveCount(0);
-  await chooseDropdown(page, "Filter by module", "Workflows");
-  await expect(page.locator(".access-table tbody tr").first()).toContainText(
-    "Workflows",
-  );
-  await page.getByLabel("Search permissions").fill("not-existing-catalog-key");
+  await chooseDropdown(page, "Filter by module", "workflows");
+  const table = page.getByRole("table", { name: "Permissions", exact: true });
+  await expect(table).toContainText("Workflows");
+  await expect(table).not.toContainText("Workflow Design");
+  await page
+    .getByLabel("Search permissions", { exact: true })
+    .fill("not-existing-catalog-key");
   await expect(
     page.getByText("No records found.", { exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Search permissions").fill("");
+  await page.getByLabel("Search permissions", { exact: true }).fill("");
   await chooseDropdown(page, "Filter by module", "");
-  await page.getByRole("button", { name: "Next page", exact: true }).click();
-  await expect(page.getByText(/Page 2 of/)).toBeVisible();
+  await expect(table).toContainText("Access Control");
+  await expect(page.getByText("Business actions", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText("System details", { exact: true })).toHaveCount(
+    0,
+  );
 });
 test("levels create, validate duplicates, reopen and deactivate", async ({
   page,
@@ -196,7 +210,13 @@ test("overview shows live organization counts and opens the existing creation fo
           { headers },
         );
         expect(response.ok()).toBeTruthy();
-        return response.json();
+        const result = await response.json();
+        if (section === "permissions")
+          result.total = result.catalogGroups.reduce(
+            (n, g) => n + g.actions.length,
+            0,
+          );
+        return result;
       },
     ),
   );
@@ -346,11 +366,9 @@ test("mobile navigation starts compact and expands the shared HRMS menu", async 
   ).toBeLessThan(150);
   await toggle.click();
   await expect(nav).toBeVisible();
-  await nav
-    .getByRole("link", { name: "Teams Management", exact: true })
-    .click();
+  await nav.getByRole("link", { name: "Access Control", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Teams", exact: true }),
+    page.getByRole("heading", { name: "Access Control", exact: true }),
   ).toBeVisible();
   await expect(nav).toBeHidden();
   await page
@@ -366,52 +384,54 @@ test("mobile navigation starts compact and expands the shared HRMS menu", async 
   ).toBeFocused();
 });
 
-test("permission action filters preserve catalog totals and expose complete restrictions", async ({
+test("permissions show CRUD and special actions with module and permission descriptions", async ({
   page,
   request,
 }) => {
-  const response = await request.get(
-    `${api}/access-control/permissions?pageSize=1`,
-    { headers: { Authorization: `Bearer ${session.accessToken}` } },
-  );
-  const catalog = await response.json();
+  const response = await request.get(`${api}/access-control/roles/options`, {
+    headers: { Authorization: `Bearer ${session.accessToken}` },
+  });
+  const { businessGroups: groups } = await response.json();
+  const total = groups.reduce((n, g) => n + g.actions.length, 0);
   await page.goto("/org-admin/access-control/permissions");
-  await expect(
-    page
-      .locator(".access-detail-stat")
-      .filter({ hasText: "Total permissions" })
-      .locator("strong"),
-  ).toHaveText(String(catalog.catalogTotal));
-  await chooseDropdown(page, "Filter by action", catalog.actions[0]);
-  const expected = await (
-    await request.get(
-      `${api}/access-control/permissions?action=${encodeURIComponent(catalog.actions[0])}`,
-      { headers: { Authorization: `Bearer ${session.accessToken}` } },
-    )
-  ).json();
+  const table = page.getByRole("table", { name: "Permissions", exact: true });
+  await expect(table.getByRole("columnheader")).toHaveText([
+    "Permission Name",
+    "Code",
+    "Section",
+    "Module",
+    "Action",
+    "Description",
+  ]);
   await expect(page.locator(".access-result-count")).toHaveText(
-    `${expected.total} of ${catalog.catalogTotal} permissions`,
+    `${total} of ${total} permissions`,
   );
-  const actions = page.locator(".access-action-tag");
-  await expect(actions).toHaveCount(expected.items.length);
-  for (const action of await actions.allTextContents())
-    expect(action).toBe(catalog.actions[0]);
-  const description = page.locator(".access-permission-description").first();
-  await description.locator("summary").click();
-  await expect(description).toHaveAttribute("open", "");
-  await expect(description.locator("div")).toContainText(
-    expected.items[0].description,
+  await chooseDropdown(page, "Filter by module", "employees");
+  const employees = groups.find((g) => g.id === "employees");
+  await expect(table.locator(".access-action-tag")).toHaveText([
+    "Create",
+    "Read",
+    "Update",
+    "Delete",
+  ]);
+  await expect(table).toContainText(employees.description);
+  for (const permission of employees.actions)
+    await expect(table).toContainText(permission.description);
+  await expect(table).not.toContainText("employees.findAll");
+  await chooseDropdown(page, "Filter by module", "");
+  await chooseDropdown(page, "Filter by action", "Approve");
+  await expect(table.locator(".access-action-tag")).toHaveText(["Approve"]);
+  await expect(table).toContainText("HR Approvals");
+  await expect(table).toContainText(
+    "Approve eligible employee change requests",
   );
+  await chooseDropdown(page, "Filter by action", "");
+  await page.getByLabel("Search permissions").fill("reporting managers");
+  await expect(table.locator(".access-action-tag")).toHaveText(["Update"]);
   await page.getByLabel("Search permissions").fill("no-such-permission");
   await expect(
     page.getByText("No records found.", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page
-      .locator(".access-detail-stat")
-      .filter({ hasText: "Total permissions" })
-      .locator("strong"),
-  ).toHaveText(String(catalog.catalogTotal));
 });
 
 test("team and role catalogs show live organization summaries while filtering", async ({
@@ -437,7 +457,7 @@ test("team and role catalogs show live organization summaries while filtering", 
       [
         ["Total Roles", "totalRoles"],
         ["Active Roles", "activeRoles"],
-        ["Assigned Permissions", "assignedPermissions"],
+        ["Assigned Permissions", "assignedBusinessActions"],
       ],
     ],
   ]) {

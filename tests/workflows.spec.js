@@ -142,7 +142,7 @@ test("desktop, tablet and mobile pages fit the viewport and navigation works", a
     });
   }
   await page
-    .getByRole("navigation", { name: "Organization admin navigation" })
+    .getByRole("navigation", { name: "Workflow sections" })
     .getByRole("link", { name: "Templates" })
     .click();
   await expect(
